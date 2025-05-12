@@ -1,0 +1,62 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {},
+	"extensions": {
+		"recommendations": [
+			"rust-lang.rust-analyzer",
+			"qufiwefefwoyn.inline-sql-syntax",
+			"wof.vscode-easy-print",
+			"vadimcn.vscode-lldb",
+			"formulahendry.code-runner",
+			"comboompunktsucht.vsc-comboom-sucht-nordic",
+			"edwinhuish.better-comments-next"
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"type": "lldb",
+				"request": "launch",
+				"name": "Debug executable 'simplesql'",
+				"cargo": {
+					"args": [
+						"build",
+						"--bin=simplesql",
+						"--package=simplesql"
+					],
+					"filter": {
+						"name": "simplesql",
+						"kind": "bin"
+					}
+				},
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			},
+			{
+				"type": "lldb",
+				"request": "launch",
+				"name": "Debug unit tests in executable 'simplesql'",
+				"cargo": {
+					"args": [
+						"test",
+						"--no-run",
+						"--bin=simplesql",
+						"--package=simplesql"
+					],
+					"filter": {
+						"name": "simplesql",
+						"kind": "bin"
+					}
+				},
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			}
+		],
+		"compounds": []
+	}
+}

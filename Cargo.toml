@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 ratatui = "*"
-tui-textarea = { version = "*", features = ["search"] }
-ratatui-explorer = "*"
+edtui = "*"
 crossterm = "*"
+ratatui_simple_logger = "*"
+tui-scrollview = "*"

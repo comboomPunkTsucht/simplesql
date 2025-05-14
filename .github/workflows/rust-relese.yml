@@ -99,19 +99,7 @@ jobs:
           os: windows-latest
           os-name: windows
           arch: x86_64
-        - target: x86_64-pc-windows-gnu
-          os: windows-latest
-          os-name: windows
-          arch: x86_64
-        - target: x86_64-pc-windows-gnullvm
-          os: windows-latest
-          os-name: windows
-          arch: x86_64
         - target: aarch64-pc-windows-msvc
-          os: windows-latest
-          os-name: windows
-          arch: aarch64
-        - target: aarch64-pc-windows-gnullvm
           os: windows-latest
           os-name: windows
           arch: aarch64

@@ -73,7 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     result
 }
-
+#[!warn(unused_variables)]
 fn draw(frame: &mut Frame, state: &mut EditorState, tui_tab: &mut TuiTab) {
     use Constraint::{Fill, Length, Min};
 

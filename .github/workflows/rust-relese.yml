@@ -1,4 +1,4 @@
-name: Genp - Build, Release (with a twist!)
+name: simplesql - Build, Release (with a twist!)
 
 permissions:
   contents: write

@@ -2,7 +2,7 @@
 name = "simple-sql"
 version = "0.1.0"
 edition = "2021"
-description = "A simple SQL client with a terminal UI"
+description = "A simple SQL TUI client"
 license = "MIT"
 authors = ["mcpeaps_HD<mcpeaps_HD@comboompunktsucht.app>"]
 

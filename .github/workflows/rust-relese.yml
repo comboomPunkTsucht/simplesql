@@ -1,0 +1,195 @@
+name: Genp - Build, Release (with a twist!)
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Version
+        id: extract_version
+        run: |
+          version=${GITHUB_REF#refs/tags/v}
+          echo "version=$version" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Debug Version
+        run: echo "Version is ${{ env.version }}"
+        shell: bash
+
+      - name: Extract Date
+        id: extract_date
+        run: |
+          date=$(date +'%Y-%m-%d')
+          echo "date=$date" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Debug Date
+        run: echo "Date is ${{ env.date }}"
+        shell: bash
+
+      - name: Create Changelog File
+        id: create-changelog
+        uses: 1arp/create-a-file-action@0.4.5
+        with:
+          file: changelog.md
+          isAbsolutePath: false
+          content: |
+            # Changelog
+
+            All notable changes to this project will be documented in this file.
+
+            This project adheres to [Semantic Versioning](https://semver.org).
+
+            <!--
+            Note: In this file, do not use the hard wrap in the middle of a sentence for compatibility with GitHub comment style markdown rendering.
+            -->
+
+            ## [Unreleased]
+            ## [v${{ env.version }}] - ${{ env.date }}
+            Hey there, folks! It's time to unleash the power of simplesql v${{ env.version }} - the ultimate CLI tool for writing SQL queries like a pro!
+            With this release, we've added some extra spice to make things even more fun. Who needs boring old SQL when you can have funky fresh queries straight from the simplesql factory?
+            So, what are you waiting for? Grab your copy and start writing SQL queries that'll make your friends go "Whoa, how'd you come up with that?" 🎉
+
+      - name: Check if Changelog Exists
+        run: cat changelog.md
+        shell: bash
+
+      - name: Create GitHub Release
+        id: create-release
+        uses: taiki-e/create-gh-release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: simplesql v${{ env.version }} - lets write SQL queries like a pro!
+          changelog: changelog.md
+
+  upload-assets:
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          # Linux targets
+        - target: x86_64-unknown-linux-gnu
+          os: ubuntu-latest
+          os-name: linux
+          arch: x86_64
+        - target: x86_64-unknown-linux-musl
+          os: ubuntu-latest
+          os-name: linux
+          arch: x86_64
+        - target: x86_64-unknown-linux-gnux32
+          os: ubuntu-latest
+          os-name: linux
+          arch: x86_64
+        - target: x86_64-unknown-linux-ohos
+          os: ubuntu-latest
+          os-name: linux
+          arch: x86_64
+        - target: i586-unknown-linux-gnu
+          os: ubuntu-latest
+          os-name: linux
+          arch: i586
+        - target: i586-unknown-linux-musl
+          os: ubuntu-latest
+          os-name: linux
+          arch: i586
+        - target: i686-unknown-linux-gnu
+          os: ubuntu-latest
+          os-name: linux
+          arch: i686
+        - target: i686-unknown-linux-musl
+          os: ubuntu-latest
+          os-name: linux
+          arch: i686
+
+            # Windows targets
+        - target: x86_64-pc-windows-msvc
+          os: windows-latest
+          os-name: windows
+          arch: x86_64
+        - target: x86_64-pc-windows-gnu
+          os: windows-latest
+          os-name: windows
+          arch: x86_64
+        - target: x86_64-pc-windows-gnullvm
+          os: windows-latest
+          os-name: windows
+          arch: x86_64
+        - target: aarch64-pc-windows-msvc
+          os: windows-latest
+          os-name: windows
+          arch: aarch64
+        - target: aarch64-pc-windows-gnullvm
+          os: windows-latest
+          os-name: windows
+          arch: aarch64
+        - target: i586-pc-windows-msvc
+          os: windows-latest
+          os-name: windows
+          arch: i586
+        - target: i686-pc-windows-gnu
+          os: windows-latest
+          os-name: windows
+          arch: i686
+        - target: i686-pc-windows-msvc
+          os: windows-latest
+          os-name: windows
+          arch: i686
+        - target: i686-pc-windows-gnullvm
+          os: windows-latest
+          os-name: windows
+          arch: i686
+
+            # macOS targets
+        - target: x86_64-apple-darwin
+          os: macos-latest
+          os-name: macos
+          arch: x86_64
+        - target: aarch64-apple-darwin
+          os: macos-latest
+          os-name: macos
+          arch: aarch64
+
+            # BSD targets
+        - target: x86_64-unknown-freebsd
+          os: ubuntu-latest
+          os-name: freebsd
+          arch: x86_64
+        - target: i686-unknown-freebsd
+          os: ubuntu-latest
+          os-name: freebsd
+          arch: i686
+        - target: x86_64-unknown-netbsd
+          os: ubuntu-latest
+          os-name: netbsd
+          arch: x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Version
+        id: extract_version
+        run: |
+          version=${GITHUB_REF#refs/tags/v}
+          echo "version=$version" >> $GITHUB_ENV
+        shell: bash
+      - name: add Targets
+        run: rustup target add ${{ matrix.target }}
+        shell: bash
+
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: simplesql
+          target: ${{ matrix.target }}
+          tar: unix
+          zip: windows
+          archive: simplesql-v${{ env.version }}-${{ matrix.os-name }}-${{ matrix.arch }}
+          token: ${{ secrets.GITHUB_TOKEN }}

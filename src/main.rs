@@ -23,10 +23,25 @@ enum TuiTab {
     ConnectionsEditor,
     RunLog,
 }
+fn get_git_hash() -> String {
+    use std::process::Command;
+
+    let output = Command::new("git")
+        .args(&["rev-parse", "HEAD"])
+        .output()
+        .unwrap();
+    let git_hash = String::from_utf8(output.stdout).unwrap();
+    git_hash
+}
 
 fn main() {
     // Retrieve environment variables set by the build script
-    let version = env!("CARGO_PKG_VERSION");
+    let version_string = format!(
+        "v{}, Git-HEAD: {}",
+        env!("CARGO_PKG_VERSION"),
+        get_git_hash()
+    );
+    let version: &'static str = Box::leak(version_string.into_boxed_str());
     let name = env!("CARGO_PKG_NAME");
     let description = env!("CARGO_PKG_DESCRIPTION");
     let authors = env!("CARGO_PKG_AUTHORS");

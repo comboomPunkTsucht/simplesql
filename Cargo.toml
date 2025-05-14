@@ -1,7 +1,45 @@
 [package]
-name = "simplesql"
+name = "simple-sql"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+description = "A simple SQL client with a terminal UI"
+license = "MIT"
+authors = ["mcpeaps_HD<mcpeaps_HD@comboompunktsucht.app>"]
+
+[package.metadata.build-targets]
+default = [
+  "aarch64-apple-darwin",
+  "aarch64-pc-windows-msvc",
+  "aarch64-pc-windows-gnullvm",
+  "i586-pc-windows-msvc",
+  "i586-unknown-linux-gnu",
+  "i586-unknown-linux-musl",
+  "i686-pc-windows-gnu",
+  "i686-pc-windows-gnullvm",
+  "i686-pc-windows-msvc",
+  "i686-unknown-freebsd",
+  "i686-unknown-linux-gnu",
+  "i686-unknown-linux-musl",
+  "x86_64-apple-darwin",
+  "x86_64-pc-windows-gnu",
+  "x86_64-pc-windows-gnullvm",
+  "x86_64-pc-windows-msvc",
+  "x86_64-unknown-freebsd",
+  "x86_64-unknown-linux-gnu",
+  "x86_64-unknown-linux-gnux32",
+  "x86_64-unknown-linux-musl",
+  "x86_64-unknown-linux-ohos",
+  "x86_64-unknown-netbsd"
+]
+
+[target.'cfg(target_os = "windows")'.dependencies]
+# Windows-specific dependencies would go here
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Linux-specific dependencies would go here
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# macOS-specific dependencies would go here
 
 [dependencies]
 ratatui = "*"

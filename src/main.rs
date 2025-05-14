@@ -35,7 +35,7 @@ fn get_git_hash() -> String {
 }
 
 fn main() {
-    // Retrieve environment variables set by the build script
+    // Set up the CLI application using Clap and congigs
     let version_string = format!(
         "v{}, Git-HEAD: {}",
         env!("CARGO_PKG_VERSION"),
@@ -52,7 +52,6 @@ fn main() {
         _ => panic!("Unsupported platform"),
     };
 
-    // Set up the CLI application using Clap
     let matches = Command::new(name)
         .version(version)
         .author(authors)

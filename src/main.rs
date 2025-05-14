@@ -59,6 +59,8 @@ fn main() {
                 .short('t')
                 .alias("cli")
                 .short_alias('c')
+                .visible_alias("cli")
+                .visible_short_alias('c')
                 .global(true)
                 .default_value("true")
                 .conflicts_with("gui")

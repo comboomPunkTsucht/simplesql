@@ -85,26 +85,14 @@ jobs:
           os: ubuntu-latest
           os-name: linux
           arch: x86_64
-        - target: x86_64-unknown-linux-ohos
+        - target: aarch64-unknown-linux-gnu
           os: ubuntu-latest
           os-name: linux
-          arch: x86_64
-        - target: i586-unknown-linux-gnu
+          arch: aarch64
+        - target: aarch64-unknown-linux-musl
           os: ubuntu-latest
           os-name: linux
-          arch: i586
-        - target: i586-unknown-linux-musl
-          os: ubuntu-latest
-          os-name: linux
-          arch: i586
-        - target: i686-unknown-linux-gnu
-          os: ubuntu-latest
-          os-name: linux
-          arch: i686
-        - target: i686-unknown-linux-musl
-          os: ubuntu-latest
-          os-name: linux
-          arch: i686
+          arch: aarch64
 
             # Windows targets
         - target: x86_64-pc-windows-msvc
@@ -127,22 +115,6 @@ jobs:
           os: windows-latest
           os-name: windows
           arch: aarch64
-        - target: i586-pc-windows-msvc
-          os: windows-latest
-          os-name: windows
-          arch: i586
-        - target: i686-pc-windows-gnu
-          os: windows-latest
-          os-name: windows
-          arch: i686
-        - target: i686-pc-windows-msvc
-          os: windows-latest
-          os-name: windows
-          arch: i686
-        - target: i686-pc-windows-gnullvm
-          os: windows-latest
-          os-name: windows
-          arch: i686
 
             # macOS targets
         - target: x86_64-apple-darwin
@@ -159,10 +131,6 @@ jobs:
           os: ubuntu-latest
           os-name: freebsd
           arch: x86_64
-        - target: i686-unknown-freebsd
-          os: ubuntu-latest
-          os-name: freebsd
-          arch: i686
         - target: x86_64-unknown-netbsd
           os: ubuntu-latest
           os-name: netbsd

@@ -3,18 +3,18 @@ use clap::{Arg, Command};
 #[allow(unused_imports)]
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 #[allow(unused_imports)]
-use crossterm::{terminal, ExecutableCommand};
+use crossterm::{ExecutableCommand, terminal};
 #[allow(unused_imports)]
 use edtui::{EditorEventHandler, EditorState, EditorView, SyntaxHighlighter};
 #[allow(unused_imports)]
 use ratatui::{
+    Frame,
     crossterm::event,
     layout::{Constraint, Layout},
     widgets::Block,
-    Frame,
 };
 #[allow(unused_imports)]
-use std::io::{stdout, Write};
+use std::io::{Write, stdout};
 
 enum TuiTab {
     SqlEditor,
@@ -48,28 +48,30 @@ fn main() {
                 .short('g')
                 .global(true)
                 .default_value("false")
-                .conflicts_with("cli")
+                .conflicts_with("tui")
                 .action(clap::ArgAction::SetTrue)
-                .help("Sets the graphical user interface mode"),
+                .long_help("When Flag is set the programm runs in the non default Graphical User Interface Mode")
+                .help("If set the program runs in gui mode"),
         )
         .arg(
-            Arg::new("cli")
-                .long("cli")
-                .short('c')
-                .alias("tui")
-                .short_alias('t')
+            Arg::new("tui")
+                .long("tui")
+                .short('t')
+                .alias("cli")
+                .short_alias('c')
                 .global(true)
                 .default_value("true")
                 .conflicts_with("gui")
                 .action(clap::ArgAction::SetTrue)
-                .help("Sets the command line interface mode"),
+                .long_help("When Flag is set the programm runns in the default Terminal User Interface Mode")
+                .help("If set the programm runs in tui mode [default]"),
         )
         .get_matches();
 
     if matches.get_flag("gui") {
         // GUI mode
         main_gui();
-    } else if matches.get_flag("cli") {
+    } else if matches.get_flag("tui") {
         // CLI mode
         if let Err(e) = main_tui() {
             eprintln!("Error: {}", e);

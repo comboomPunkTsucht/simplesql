@@ -31,7 +31,7 @@ cargo build --release
 | Short | Long        | Description                                           |
 |-------|-------------|-------------------------------------------------------|
 | `-g`  | `--gui`     | Launch **simplesql** in graphical mode                |
-| `-t`, `-c` | `--tui`| Launch in terminal mode (default)                     |
+| `-t`, `-c` | `--tui`, `--cli`| Launch in terminal mode (default)                     |
 | `-h`  | `--help`    | Show help message                                     |
 | `-V`  | `--version` | Show version info                                     |
 

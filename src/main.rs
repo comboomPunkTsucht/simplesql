@@ -1,12 +1,17 @@
+#[allow(unused_imports)]
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+#[allow(unused_imports)]
 use crossterm::{ExecutableCommand, terminal};
+#[allow(unused_imports)]
 use edtui::{EditorEventHandler, EditorState, EditorView, SyntaxHighlighter};
+#[allow(unused_imports)]
 use ratatui::{
     Frame,
     crossterm::event,
     layout::{Constraint, Layout},
     widgets::Block,
 };
+#[allow(unused_imports)]
 use std::io::{Write, stdout};
 
 enum TuiTab {

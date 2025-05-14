@@ -2,7 +2,7 @@
 name = "simplesql"
 version = "0.0.1"
 edition = "2024"
-description = "A simple SQL TUI client"
+description = "SQL made simple — in your terminal or with a GUI."
 license = "MIT"
 authors = ["mcpeaps_HD<mcpeaps_HD@comboompunktsucht.app>"]
 

@@ -29,9 +29,12 @@ default = [
 # macOS-specific dependencies would go here
 
 [dependencies]
+# tui.rs
 ratatui = "*"
 edtui = "*"
 crossterm = "*"
 ratatui_simple_logger = "*"
 tui-scrollview = "*"
+# main.rs
 clap = "*"
+# gui.rs

@@ -1,3 +1,4 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 #[allow(unused_imports)]
 use clap::{Arg, Command};
 #[allow(unused_imports)]
@@ -31,12 +32,6 @@ fn main() {
     let name = env!("CARGO_PKG_NAME");
     let description = env!("CARGO_PKG_DESCRIPTION");
     let authors = env!("CARGO_PKG_AUTHORS");
-    #[allow(unused_variables)]
-    let config_path: String = match std::env::consts::OS {
-        "linux" | "macos" | "freebsd" => format!("{}/.simplesql", std::env::var("HOME").unwrap()),
-        "windows" => format!("{}/.simplesql", std::env::var("APPDATA").unwrap()),
-        _ => panic!("Unsupported platform"),
-    };
 
     let matches = Command::new(name)
         .version(version)
@@ -70,9 +65,16 @@ fn main() {
         )
         .get_matches();
 
+        if let Err(e) = shared::check_and_gen_config() {
+            eprintln!("Error generating config: {}", e);
+            std::process::exit(1);
+        }
     if matches.get_flag("gui") {
         // GUI mode
-        gui::main_gui();
+        if let Err(e) = gui::main_gui() {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
     } else if matches.get_flag("tui") {
         // CLI mode
         if let Err(e) = tui::main_tui() {

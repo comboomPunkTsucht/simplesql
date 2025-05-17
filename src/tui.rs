@@ -20,13 +20,6 @@ use ratatui::{
 };
 #[allow(unused_imports)]
 use std::io::stdout;
-enum TuiTab {
-    SqlEditor,
-    TableView,
-    CredentialsEditor,
-    ConnectionsEditor,
-    RunLog,
-}
 
 pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
     let mut stdout = stdout();
@@ -36,7 +29,7 @@ pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut event_handler = EditorEventHandler::default();
     let mut state = EditorState::default();
-    let mut tui_tab = TuiTab::SqlEditor;
+    let mut tui_tab = shared::Tab::SqlEditor;
     let backend = ratatui::backend::CrosstermBackend::new(stdout);
     let mut terminal = ratatui::Terminal::new(backend)?;
 
@@ -53,19 +46,19 @@ pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
                     match key_event.code {
                         event::KeyCode::F(12) => break,
                         event::KeyCode::F(1) => {
-                            tui_tab = TuiTab::SqlEditor;
+                            tui_tab = shared::Tab::SqlEditor;
                         }
                         event::KeyCode::F(2) => {
-                            tui_tab = TuiTab::TableView;
+                            tui_tab = shared::Tab::TableView;
                         }
                         event::KeyCode::F(3) => {
-                            tui_tab = TuiTab::CredentialsEditor;
+                            tui_tab = shared::Tab::CredentialsEditor;
                         }
                         event::KeyCode::F(4) => {
-                            tui_tab = TuiTab::ConnectionsEditor;
+                            tui_tab = shared::Tab::ConnectionsEditor;
                         }
                         event::KeyCode::F(5) => {
-                            tui_tab = TuiTab::RunLog;
+                            tui_tab = shared::Tab::RunLog;
                         }
                         _ => {}
                     }
@@ -86,7 +79,7 @@ pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[allow(unused_variables)]
-fn draw_tui(frame: &mut Frame, state: &mut EditorState, tui_tab: &mut TuiTab) {
+fn draw_tui(frame: &mut Frame, state: &mut EditorState, tui_tab: &mut shared::Tab) {
     use Constraint::{Fill, Length, Min};
 
     let vertical = Layout::vertical([Length(3), Min(0), Length(3)]);

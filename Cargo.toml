@@ -38,3 +38,13 @@ tui-scrollview = "*"
 # main.rs
 clap = "*"
 # gui.rs
+egui = {features = ["accesskit", "color-hex"], version = "*"}
+egui_extras = { version = "*", features = ["all_loaders"] }
+# image = { version = "0.25", features = ["jpeg", "png", "webp"] } # Add the types you want support for
+eframe = "*"
+egui_tiles = "*"
+egui_code_editor = "*"
+egui_logger = "*"
+puffin = "*"
+egui_file = "*"
+egui-notify = "*"

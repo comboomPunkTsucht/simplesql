@@ -11,6 +11,7 @@ use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use crossterm::{ExecutableCommand, terminal};
 #[allow(unused_imports)]
 use edtui::{EditorEventHandler, EditorState, EditorView, SyntaxHighlighter};
+use ratatui::widgets::Widget;
 #[allow(unused_imports)]
 use ratatui::{
     Frame,
@@ -38,7 +39,6 @@ pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
             terminal
                 .draw(|f| draw_tui(f, &mut state, &mut tui_tab))
                 .unwrap();
-
             if let Ok(event) = event::read() {
                 event_handler.on_event(event.clone(), &mut state);
 
@@ -64,6 +64,7 @@ pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             }
+
         }
         Ok(())
     })();
@@ -93,9 +94,6 @@ fn draw_tui(frame: &mut Frame, state: &mut EditorState, tui_tab: &mut shared::Ta
 
     frame.render_widget(Block::bordered().title("Title Bar"), title_area);
     frame.render_widget(Block::bordered().title("Status Bar"), status_area);
-    frame.render_widget(
-        EditorView::new(state).syntax_highlighter(Some(syntax_highlighter)),
-        left_area,
-    );
+    frame.render_widget(EditorView::new(state).syntax_highlighter(Some(syntax_highlighter)), left_area);
     frame.render_widget(Block::bordered().title("Right"), right_area);
 }

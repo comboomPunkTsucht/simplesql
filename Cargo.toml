@@ -32,6 +32,7 @@ default = [
 # tui.rs
 ratatui = "*"
 edtui = "*"
+edtui-jagged = "*"
 crossterm = "*"
 ratatui_simple_logger = "*"
 tui-scrollview = "*"

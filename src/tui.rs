@@ -3,132 +3,108 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-#[allow(unused_imports)]
-use crate::shared;
-use crossterm::style::Color;
-#[allow(unused_imports)]
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
-#[allow(unused_imports)]
-use crossterm::{ExecutableCommand, terminal};
-#[allow(unused_imports)]
-use ratatui::widgets::Widget;
-#[allow(unused_imports)]
+use crossterm::event::KeyCode;
 use ratatui::{
-    Frame,
-    crossterm::event,
-    layout::{Constraint, Layout},
-    widgets::Block,
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Style},
+    widgets::{Block, Borders, Paragraph, Tabs},
+    prelude::*,
 };
-#[allow(unused_imports)]
-use std::io::stdout;
+use widgetui::*;
+use std::error::Error;
 
-pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
-    let mut stdout = stdout();
-    enable_raw_mode()?;
-    stdout.execute(terminal::EnterAlternateScreen)?;
-    stdout.execute(crossterm::cursor::Hide)?;
-
-    let mut tui_tab = shared::Tab::SqlEditor;
-    let backend = ratatui::backend::CrosstermBackend::new(stdout);
-    let mut terminal = ratatui::Terminal::new(backend)?;
-
-    let result = (|| {
-        loop {
-            terminal
-                .draw(|f| draw_tui(f, &mut tui_tab))
-                .unwrap();
-            if let Ok(event) = event::read() {
-
-                if let event::Event::Key(key_event) = event {
-                    match key_event.code {
-                        event::KeyCode::F(12) => break,
-                        event::KeyCode::F(1) => {
-                            tui_tab = shared::Tab::SqlEditor;
-                        }
-                        event::KeyCode::F(2) => {
-                            tui_tab = shared::Tab::TableView;
-                        }
-                        event::KeyCode::F(3) => {
-                            tui_tab = shared::Tab::CredentialsEditor;
-                        }
-                        event::KeyCode::F(4) => {
-                            tui_tab = shared::Tab::ConnectionsEditor;
-                        }
-                        event::KeyCode::F(5) => {
-                            tui_tab = shared::Tab::RunLog;
-                        }
-                        _ => {}
-                    }
-                }
-            }
-
-        }
-        Ok(())
-    })();
-
-    disable_raw_mode()?;
-    terminal
-        .backend_mut()
-        .execute(terminal::LeaveAlternateScreen)?;
-    terminal.backend_mut().execute(crossterm::cursor::Show)?;
-    terminal.show_cursor()?;
-
-    result
+use crate::shared;
+#[derive(Clone, Copy, State)]
+struct AppState {
+    current_tab: shared::Tab,
 }
 
-#[allow(unused_variables)]
-fn draw_tui(frame: &mut Frame, tui_tab: &mut shared::Tab) {
-    use Constraint::{Fill, Length, Min};
-    use ratatui::prelude::Stylize;
-
-    // Create main layout with tab bar, content area, and help bar
-    let main_chunks = Layout::default()
-        .direction(ratatui::layout::Direction::Vertical)
-        .constraints([Length(3), Fill(1), Length(3)].as_ref())
-        .split(frame.area());
-
-    // Create tab bar
-    let tabs = ratatui::widgets::Tabs::new(vec!["SQL Editor", "Table View", "Credentials", "Connections", "Run Log"])
-        .select(match tui_tab {
-            shared::Tab::SqlEditor => 0,
-            shared::Tab::TableView => 1,
-            shared::Tab::CredentialsEditor => 2,
-            shared::Tab::ConnectionsEditor => 3,
-            shared::Tab::RunLog => 4,
-        })
-        .style(ratatui::style::Style::default())
-        .highlight_style(ratatui::style::Style::default().bold().fg(ratatui::style::Color::Black).bg(ratatui::style::Color::White))
-        .divider("|")
-        .block(Block::default().title("Tabs").borders(ratatui::widgets::Borders::ALL));
-    frame.render_widget(tabs, main_chunks[0]);
-
-    // Render main content area based on selected tab
-    match tui_tab {
-        shared::Tab::SqlEditor => {
-            let block = Block::default().title("SQL Editor").borders(ratatui::widgets::Borders::ALL);
-            frame.render_widget(block, main_chunks[1]);
-        }
-        shared::Tab::TableView => {
-            let block = Block::default().title("Table View").borders(ratatui::widgets::Borders::ALL);
-            frame.render_widget(block, main_chunks[1]);
-        }
-        shared::Tab::CredentialsEditor => {
-            let block = Block::default().title("Credentials Editor").borders(ratatui::widgets::Borders::ALL);
-            frame.render_widget(block, main_chunks[1]);
-        }
-        shared::Tab::ConnectionsEditor => {
-            let block = Block::default().title("Connections Editor").borders(ratatui::widgets::Borders::ALL);
-            frame.render_widget(block, main_chunks[1]);
-        }
-        shared::Tab::RunLog => {
-            let block = Block::default().title("Run Log").borders(ratatui::widgets::Borders::ALL);
-            frame.render_widget(block, main_chunks[1]);
+impl Default for AppState {
+    fn default() -> Self {
+        AppState {
+            current_tab: shared::Tab::default(),
         }
     }
+}
 
-    // Create help bar at bottom
-    let help_text = ratatui::widgets::Paragraph::new("F1: SQL Editor | F2: Table View | F3: Credentials | F4: Connections | F5: Run Log | F12: Quit")
-        .style(ratatui::style::Style::default())
-        .block(Block::default().title("Help").borders(ratatui::widgets::Borders::ALL));
-    frame.render_widget(help_text, main_chunks[2]);
+fn widget(
+    mut frame: ResMut<WidgetFrame>,
+    mut events: ResMut<Events>,
+    mut state: ResMut<AppState>,
+) -> WidgetResult {
+    // Create main layout
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Fill(1),
+            Constraint::Length(3),
+        ])
+        .split(frame.size());
+
+    // Create and render tabs
+    let tabs = Tabs::new(vec![
+        "SQL Editor",
+        "Table View",
+        "Credentials",
+        "Connections",
+        "Run Log",
+    ])
+    .select(
+        state.current_tab.to_index()
+    )
+    .style(Style::default())
+    .highlight_style(
+        Style::default()
+            .bold()
+            .fg(Color::Black)
+            .bg(Color::White),
+    )
+    .divider("|")
+    .block(Block::default().title("Tabs").borders(Borders::ALL));
+    frame.render_widget(tabs, chunks[0]);
+
+    // Render main content based on selected tab
+    let content_block = match state.current_tab {
+        shared::Tab::SqlEditor => Block::default().title("SQL Editor").borders(Borders::ALL),
+        shared::Tab::TableView => Block::default().title("Table View").borders(Borders::ALL),
+        shared::Tab::CredentialsEditor => Block::default().title("Credentials Editor").borders(Borders::ALL),
+        shared::Tab::ConnectionsEditor => Block::default().title("Connections Editor").borders(Borders::ALL),
+        shared::Tab::RunLog => Block::default().title("Run Log").borders(Borders::ALL),
+    };
+    frame.render_widget(content_block, chunks[1]);
+
+    // Render help bar
+    let help_text = Paragraph::new(
+        "F1: SQL Editor | F2: Table View | F3: Credentials | F4: Connections | F5: Run Log | F12: Quit"
+    )
+    .block(Block::default().title("Help").borders(Borders::ALL));
+    frame.render_widget(help_text, chunks[2]);
+
+    // Handle key events
+    if events.key(KeyCode::F(12)) {
+        events.register_exit();
+    } else if events.key(KeyCode::F(1)) {
+        state.current_tab = shared::Tab::SqlEditor;
+    } else if events.key(KeyCode::F(2)) {
+        state.current_tab = shared::Tab::TableView;
+    } else if events.key(KeyCode::F(3)) {
+        state.current_tab = shared::Tab::CredentialsEditor;
+    } else if events.key(KeyCode::F(4)) {
+        state.current_tab = shared::Tab::ConnectionsEditor;
+    } else if events.key(KeyCode::F(5)) {
+        state.current_tab = shared::Tab::RunLog;
+    }
+
+    Ok(())
+}
+
+pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize the application state
+    let app_state = AppState {
+        current_tab: shared::Tab::default(),
+    };
+    Ok(App::new(100)?
+        .widgets(widget).states(app_state)
+        .run()?)
 }

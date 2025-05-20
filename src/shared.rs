@@ -13,6 +13,37 @@ pub enum Tab {
   ConnectionsEditor,
   RunLog,
 }
+impl Default for Tab {
+  fn default() -> Self {
+    Tab::SqlEditor
+  }
+}
+
+impl Tab {
+
+
+  pub fn from_index(index: usize) -> Self {
+    match index {
+      0 => Tab::SqlEditor,
+      1 => Tab::TableView,
+      2 => Tab::CredentialsEditor,
+      3 => Tab::ConnectionsEditor,
+      4 => Tab::RunLog,
+      _ => panic!("Invalid tab index"),
+    }
+  }
+  pub fn to_index(self) -> usize {
+    match self {
+      Tab::SqlEditor => 0,
+      Tab::TableView => 1,
+      Tab::CredentialsEditor => 2,
+      Tab::ConnectionsEditor => 3,
+      Tab::RunLog => 4,
+    }
+  }
+}
+
+
 fn get_config_base_path() -> String {
   match std::env::consts::OS {
     "linux" | "macos" | "freebsd" => format!("{}/.simplesql", std::env::var("HOME").unwrap()),

@@ -21,7 +21,7 @@ fn hex_color_to_color32(hex: isize) -> egui::epaint::Color32 {
 
     Color32::from_rgba_premultiplied(r, g, b, a)
 }
-
+#[allow(dead_code)]
 fn hex_color_to_string(hex: isize) -> &'static str {
       const HEX_DIGITS: &[u8] = b"0123456789abcdef";
       const BUFFER_LEN: usize = 9; // "#" + 6 hex digits
@@ -35,6 +35,7 @@ fn hex_color_to_string(hex: isize) -> &'static str {
       }
     }
 
+#[allow(dead_code)]
 fn nord_color_thme() -> ColorTheme {
   let bg = hex_color_to_string(shared::NordColor::Nord0 as isize);
             let cursor = hex_color_to_string(shared::NordColor::Nord6 as isize);

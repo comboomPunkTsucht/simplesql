@@ -87,6 +87,7 @@ pub fn set_connections_content(buffer: String) -> std::io::Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub enum NordColor {
   // Polar Night
 Nord0 = 0x2e3440ff,

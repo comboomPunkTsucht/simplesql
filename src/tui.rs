@@ -5,6 +5,7 @@
 
 #[allow(unused_imports)]
 use crate::shared;
+use crossterm::style::Color;
 #[allow(unused_imports)]
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 #[allow(unused_imports)]
@@ -96,7 +97,7 @@ fn draw_tui(frame: &mut Frame, tui_tab: &mut shared::Tab) {
             shared::Tab::RunLog => 4,
         })
         .style(ratatui::style::Style::default())
-        .highlight_style(ratatui::style::Style::default().bold())
+        .highlight_style(ratatui::style::Style::default().bold().fg(ratatui::style::Color::Black).bg(ratatui::style::Color::White))
         .divider("|")
         .block(Block::default().title("Tabs").borders(ratatui::widgets::Borders::ALL));
     frame.render_widget(tabs, main_chunks[0]);

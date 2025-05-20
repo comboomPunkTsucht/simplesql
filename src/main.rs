@@ -42,11 +42,11 @@ fn main() {
                 .long("gui")
                 .short('g')
                 .global(true)
-                .default_value("true")
+                .default_value("false")
                 .conflicts_with("tui")
                 .action(clap::ArgAction::SetTrue)
-                .long_help("When Flag is set the programm runs in the default Graphical User Interface Mode")
-                .help("If set the program runs in gui mode [default]"),
+                .long_help("When Flag is set the programm runs in the non default Graphical User Interface Mode")
+                .help("If set the program runs in gui mode"),
         )
         .arg(
             Arg::new("tui")
@@ -57,11 +57,11 @@ fn main() {
                 .visible_alias("cli")
                 .visible_short_alias('c')
                 .global(true)
-                .default_value("false")
+                .default_value("true")
                 .conflicts_with("gui")
                 .action(clap::ArgAction::SetTrue)
-                .long_help("When Flag is set the programm runs in the non default Terminal User Interface Mode")
-                .help("If set the programm runs in tui mode"),
+                .long_help("When Flag is set the programm runs in the default Terminal User Interface Mode")
+                .help("If set the programm runs in tui mode [default]"),
         )
         .get_matches();
 

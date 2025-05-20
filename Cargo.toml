@@ -31,8 +31,7 @@ default = [
 [dependencies]
 # tui.rs
 ratatui = "*"
-edtui = "*"
-edtui-jagged = "*"
+widgetui = "*"
 crossterm = "*"
 ratatui_simple_logger = "*"
 tui-scrollview = "*"

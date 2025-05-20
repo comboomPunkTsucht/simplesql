@@ -10,7 +10,6 @@ use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 #[allow(unused_imports)]
 use crossterm::{ExecutableCommand, terminal};
 #[allow(unused_imports)]
-use edtui::{EditorEventHandler, EditorState, EditorView, SyntaxHighlighter};
 use ratatui::widgets::Widget;
 #[allow(unused_imports)]
 use ratatui::{
@@ -28,8 +27,6 @@ pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
     stdout.execute(terminal::EnterAlternateScreen)?;
     stdout.execute(crossterm::cursor::Hide)?;
 
-    let mut event_handler = EditorEventHandler::default();
-    let mut state = EditorState::default();
     let mut tui_tab = shared::Tab::SqlEditor;
     let backend = ratatui::backend::CrosstermBackend::new(stdout);
     let mut terminal = ratatui::Terminal::new(backend)?;
@@ -37,10 +34,9 @@ pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
     let result = (|| {
         loop {
             terminal
-                .draw(|f| draw_tui(f, &mut state, &mut tui_tab))
+                .draw(|f| draw_tui(f, &mut tui_tab))
                 .unwrap();
             if let Ok(event) = event::read() {
-                event_handler.on_event(event.clone(), &mut state);
 
                 if let event::Event::Key(key_event) = event {
                     match key_event.code {
@@ -80,20 +76,58 @@ pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[allow(unused_variables)]
-fn draw_tui(frame: &mut Frame, state: &mut EditorState, tui_tab: &mut shared::Tab) {
+fn draw_tui(frame: &mut Frame, tui_tab: &mut shared::Tab) {
     use Constraint::{Fill, Length, Min};
+    use ratatui::prelude::Stylize;
 
-    let vertical = Layout::vertical([Length(3), Min(0), Length(3)]);
-    let [title_area, main_area, status_area] = vertical.areas(frame.area());
-    let horizontal = Layout::horizontal([Fill(1); 2]);
-    let [left_area, right_area] = horizontal.areas(main_area);
+    // Create main layout with tab bar, content area, and help bar
+    let main_chunks = Layout::default()
+        .direction(ratatui::layout::Direction::Vertical)
+        .constraints([Length(3), Fill(1), Length(3)].as_ref())
+        .split(frame.area());
 
-    let theme_name = "nord";
-    let extension = "sql";
-    let syntax_highlighter = SyntaxHighlighter::new(theme_name, extension);
+    // Create tab bar
+    let tabs = ratatui::widgets::Tabs::new(vec!["SQL Editor", "Table View", "Credentials", "Connections", "Run Log"])
+        .select(match tui_tab {
+            shared::Tab::SqlEditor => 0,
+            shared::Tab::TableView => 1,
+            shared::Tab::CredentialsEditor => 2,
+            shared::Tab::ConnectionsEditor => 3,
+            shared::Tab::RunLog => 4,
+        })
+        .style(ratatui::style::Style::default())
+        .highlight_style(ratatui::style::Style::default().bold())
+        .divider("|")
+        .block(Block::default().title("Tabs").borders(ratatui::widgets::Borders::ALL));
+    frame.render_widget(tabs, main_chunks[0]);
 
-    frame.render_widget(Block::bordered().title("Title Bar"), title_area);
-    frame.render_widget(Block::bordered().title("Status Bar"), status_area);
-    frame.render_widget(EditorView::new(state).syntax_highlighter(Some(syntax_highlighter)), left_area);
-    frame.render_widget(Block::bordered().title("Right"), right_area);
+    // Render main content area based on selected tab
+    match tui_tab {
+        shared::Tab::SqlEditor => {
+            let block = Block::default().title("SQL Editor").borders(ratatui::widgets::Borders::ALL);
+            frame.render_widget(block, main_chunks[1]);
+        }
+        shared::Tab::TableView => {
+            let block = Block::default().title("Table View").borders(ratatui::widgets::Borders::ALL);
+            frame.render_widget(block, main_chunks[1]);
+        }
+        shared::Tab::CredentialsEditor => {
+            let block = Block::default().title("Credentials Editor").borders(ratatui::widgets::Borders::ALL);
+            frame.render_widget(block, main_chunks[1]);
+        }
+        shared::Tab::ConnectionsEditor => {
+            let block = Block::default().title("Connections Editor").borders(ratatui::widgets::Borders::ALL);
+            frame.render_widget(block, main_chunks[1]);
+        }
+        shared::Tab::RunLog => {
+            let block = Block::default().title("Run Log").borders(ratatui::widgets::Borders::ALL);
+            frame.render_widget(block, main_chunks[1]);
+        }
+    }
+
+    // Create help bar at bottom
+    let help_text = ratatui::widgets::Paragraph::new("F1: SQL Editor | F2: Table View | F3: Credentials | F4: Connections | F5: Run Log | F12: Quit")
+        .style(ratatui::style::Style::default())
+        .block(Block::default().title("Help").borders(ratatui::widgets::Borders::ALL));
+    frame.render_widget(help_text, main_chunks[2]);
 }

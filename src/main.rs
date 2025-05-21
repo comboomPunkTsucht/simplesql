@@ -65,10 +65,10 @@ fn main() {
         )
         .get_matches();
 
-        if let Err(e) = shared::check_and_gen_config() {
-            eprintln!("Error generating config: {}", e);
-            std::process::exit(1);
-        }
+    if let Err(e) = shared::check_and_gen_config() {
+        eprintln!("Error generating config: {}", e);
+        std::process::exit(1);
+    }
     if matches.get_flag("gui") {
         // GUI mode
         if let Err(e) = gui::main_gui() {

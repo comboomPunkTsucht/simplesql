@@ -54,49 +54,19 @@ impl Tab {
 #[derive(Clone, State)]
 pub struct AppState {
     pub current_tab: Tab,
-    pub sql_query: Vec<String>,
-    pub selected_query: usize,
+    pub sql_query: String,
 }
 
 impl Default for AppState {
     fn default() -> Self {
         AppState {
             current_tab: Tab::default(),
-            sql_query: Vec::new(),
-            selected_query: 0,
+            sql_query: String::from("select * from test;"),
         }
     }
 }
-impl AppState {
-    #[allow(dead_code)]
-    pub fn add_sql_query(&mut self, query: String) {
-        self.sql_query.push(query);
-    }
-    #[allow(dead_code)]
-    pub fn remove_sql_query(mut self) {
-        if self.selected_query < self.sql_query.len() {
-            self.sql_query.remove(self.selected_query);
-        }
-    }
-    #[allow(dead_code)]
-    pub fn get_sql_query(&self) -> Option<String> {
-        if self.selected_query < self.sql_query.len() {
-            Some(self.sql_query[self.selected_query].clone())
-        } else {
-            None
-        }
-    }
-    #[allow(dead_code)]
-    pub fn set_sql_query(&mut self, query: String) {
-        if self.selected_query < self.sql_query.len() {
-            self.sql_query[self.selected_query] = query;
-        }
-    }
-    #[allow(dead_code)]
-    pub fn get_all_sql_queries(&self) -> Vec<String> {
-        self.sql_query.clone()
-    }
-}
+#[allow(dead_code)]
+impl AppState {}
 
 fn get_config_base_path() -> String {
     match std::env::consts::OS {
@@ -225,10 +195,25 @@ impl NordColor {
     }
 
     #[allow(dead_code)]
-  
-    pub const fn as_str(&self) -> &'static str {
-        let temp1 = self.to_string();
-        let temp2 = unsafe { temp1.as_str() };
-        temp2
+    pub fn as_str(&self) -> &'static str {
+        /*match self {
+            NordColor::Nord0 => "#2e3440ff",
+            NordColor::Nord1 => "#3b4252ff",
+            NordColor::Nord2 => "#434c5eff",
+            NordColor::Nord3 => "#4c566aff",
+            NordColor::Nord4 => "#d8dee9ff",
+            NordColor::Nord5 => "#e5e9f0ff",
+            NordColor::Nord6 => "#eceff4ff",
+            NordColor::Nord7 => "#8fbcbbff",
+            NordColor::Nord8 => "#88c0d0ff",
+            NordColor::Nord9 => "#81a1c1ff",
+            NordColor::Nord10 => "#5e81acff",
+            NordColor::Nord11 => "#bf616aff",
+            NordColor::Nord12 => "#d08770ff",
+            NordColor::Nord13 => "#ebcb8bff",
+            NordColor::Nord14 => "#a3be8cff",
+            NordColor::Nord15 => "#b48eadff",
+        }*/
+        Box::leak(self.to_string().into_boxed_str())
     }
 }

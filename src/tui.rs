@@ -4,11 +4,12 @@
 // https://opensource.org/licenses/MIT
 
 use crossterm::event::KeyCode;
+use egui::TextEdit;
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::*,
     style::{Color, Style},
-    widgets::{Block, Borders, Paragraph, Tabs},
+    widgets::*,
 };
 use std::error::Error;
 use widgetui::*;
@@ -47,7 +48,8 @@ fn widget(
     // Render main content based on selected tab
     match state.current_tab {
         shared::Tab::SqlEditor => frame.render_widget(
-            Block::default().title("SQL Editor").borders(Borders::ALL),
+            Paragraph::new(state.sql_query.clone())
+                .block(Block::default().title("SQL Editor").borders(Borders::ALL)),
             chunks[1],
         ),
         shared::Tab::TableView => frame.render_widget(

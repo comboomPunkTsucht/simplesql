@@ -23,7 +23,7 @@ impl Default for Tab {
 
 impl Tab {
 
-
+  #[allow(dead_code)]
   pub fn from_index(index: usize) -> Self {
     match index {
       0 => Tab::SqlEditor,
@@ -34,6 +34,7 @@ impl Tab {
       _ => panic!("Invalid tab index"),
     }
   }
+  #[allow(dead_code)]
   pub fn to_index(self) -> usize {
     match self {
       Tab::SqlEditor => 0,

@@ -13,42 +13,20 @@ use egui_tiles::{Tile, TileId, Tiles};
 use egui_logger;
 use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
 
-fn hex_color_to_color32(hex: isize) -> egui::epaint::Color32 {
-    let r = ((hex >> 24) & 0xff) as u8;
-    let g = ((hex >> 16) & 0xff) as u8;
-    let b = ((hex >> 8) & 0xff) as u8;
-    let a = (hex & 0xff) as u8;
-
-    Color32::from_rgba_premultiplied(r, g, b, a)
-}
 #[allow(dead_code)]
-fn hex_color_to_string(hex: isize) -> &'static str {
-      const HEX_DIGITS: &[u8] = b"0123456789abcdef";
-      const BUFFER_LEN: usize = 9; // "#" + 6 hex digits
-      static mut COLOR_BUFFER: [u8; BUFFER_LEN] = [b'#'; BUFFER_LEN];
-
-      unsafe {
-        for i in (1..BUFFER_LEN).rev() {
-          COLOR_BUFFER[i] = HEX_DIGITS[((hex >> ((BUFFER_LEN - 1 - i) * 4)) & 0xf) as usize];
-        }
-        std::str::from_utf8_unchecked(&*(&raw const COLOR_BUFFER as *const [u8]))
-      }
-    }
-
-#[allow(dead_code)]
-fn nord_color_thme() -> ColorTheme {
-  let bg = hex_color_to_string(shared::NordColor::Nord0 as isize);
-            let cursor = hex_color_to_string(shared::NordColor::Nord6 as isize);
-            let selection = hex_color_to_string(shared::NordColor::Nord13 as isize);
-            let comments = hex_color_to_string(shared::NordColor::Nord14 as isize);
-            let functions = hex_color_to_string(shared::NordColor::Nord8 as isize);
-            let keywords = hex_color_to_string(shared::NordColor::Nord15 as isize);
-            let literals = hex_color_to_string(shared::NordColor::Nord14 as isize);
-            let numerics = hex_color_to_string(shared::NordColor::Nord13 as isize);
-            let punctuation = hex_color_to_string(shared::NordColor::Nord5 as isize);
-            let strs = hex_color_to_string(shared::NordColor::Nord14 as isize);
-            let types = hex_color_to_string(shared::NordColor::Nord15 as isize);
-            let special = hex_color_to_string(shared::NordColor::Nord12 as isize);
+fn nord_color_theme() -> ColorTheme {
+  let bg = shared::NordColor::Nord0.as_str();
+  let cursor = shared::NordColor::Nord6.as_str();
+  let selection = shared::NordColor::Nord13.as_str();
+  let comments = shared::NordColor::Nord14.as_str();
+  let functions = shared::NordColor::Nord8.as_str();
+  let keywords = shared::NordColor::Nord15.as_str();
+  let literals = shared::NordColor::Nord14.as_str();
+  let numerics = shared::NordColor::Nord13.as_str();
+  let punctuation = shared::NordColor::Nord5.as_str();
+  let strs = shared::NordColor::Nord14.as_str();
+  let types = shared::NordColor::Nord15.as_str();
+  let special = shared::NordColor::Nord12.as_str();
 
             ColorTheme {
                 name: "Nord",
@@ -93,9 +71,9 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
         pane: &mut Pane,
     ) -> egui_tiles::UiResponse {
         // Give each pane a unique color:
-        let background_color = hex_color_to_color32(shared::NordColor::Nord0 as isize);
+        let background_color = Color32::from_hex(shared::NordColor::Nord0.as_str()).unwrap();
         ui.painter().rect_filled(ui.max_rect(), 0.0, background_color);
-        ui.label(self.tab_title_for_pane(pane).color(hex_color_to_color32(shared::NordColor::Nord6 as isize)));
+        ui.label(self.tab_title_for_pane(pane).color(Color32::from_hex(shared::NordColor::Nord6.as_str()).unwrap()));
         match pane.nr {
             shared::Tab::SqlEditor => {
                 let mut sql_query: String = String::from("select * from test;");

@@ -5,6 +5,8 @@
 
 use std::{fmt::format, fs::{File, create_dir_all}, io::{Read, Write}};
 
+use egui::TextBuffer;
+
 #[derive(Clone, Copy)]
 pub enum Tab {
   SqlEditor,
@@ -140,4 +142,50 @@ Nord12 = 0xd08770ff,
 Nord13 = 0xebcb8bff,
 Nord14 = 0xa3be8cff,
 Nord15 = 0xb48eadff,
+}
+
+impl NordColor {
+  #[allow(dead_code)]
+  pub fn to_string(&self) -> String {
+    match self {
+      NordColor::Nord0 => "#2e3440".to_string(),
+      NordColor::Nord1 => "#3b4252".to_string(),
+      NordColor::Nord2 => "#434c5e".to_string(),
+      NordColor::Nord3 => "#4c566a".to_string(),
+      NordColor::Nord4 => "#d8dee9".to_string(),
+      NordColor::Nord5 => "#e5e9f0".to_string(),
+      NordColor::Nord6 => "#eceff4".to_string(),
+      NordColor::Nord7 => "#8fbcbb".to_string(),
+      NordColor::Nord8 => "#88c0d0".to_string(),
+      NordColor::Nord9 => "#81a1c1".to_string(),
+      NordColor::Nord10 => "#5e81ac".to_string(),
+      NordColor::Nord11 => "#bf616a".to_string(),
+      NordColor::Nord12 => "#d08770".to_string(),
+      NordColor::Nord13 => "#ebcb8b".to_string(),
+      NordColor::Nord14 => "#a3be8c".to_string(),
+      NordColor::Nord15 => "#b48ead".to_string(),
+    }
+  }
+  #[allow(dead_code)]
+  pub fn as_str(&self) -> &'static str {
+    match self {
+      NordColor::Nord0 => "#2e3440ff",
+      NordColor::Nord1 => "#3b4252ff",
+      NordColor::Nord2 => "#434c5eff",
+      NordColor::Nord3 => "#4c566aff",
+      NordColor::Nord4 => "#d8dee9ff",
+      NordColor::Nord5 => "#e5e9f0ff",
+      NordColor::Nord6 => "#eceff4ff",
+      NordColor::Nord7 => "#8fbcbbff",
+      NordColor::Nord8 => "#88c0d0ff",
+      NordColor::Nord9 => "#81a1c1ff",
+      NordColor::Nord10 => "#5e81acff",
+      NordColor::Nord11 => "#bf616aff",
+      NordColor::Nord12 => "#d08770ff",
+      NordColor::Nord13 => "#ebcb8bff",
+      NordColor::Nord14 => "#a3be8cff",
+      NordColor::Nord15 => "#b48eadff",
+    }
+  }
+
 }

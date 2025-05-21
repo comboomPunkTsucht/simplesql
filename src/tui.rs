@@ -6,31 +6,19 @@
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Constraint, Direction, Layout},
+    prelude::*,
     style::{Color, Style},
     widgets::{Block, Borders, Paragraph, Tabs},
-    prelude::*,
 };
-use widgetui::*;
 use std::error::Error;
+use widgetui::*;
 
 use crate::shared;
-#[derive(Clone, Copy, State)]
-struct AppState {
-    current_tab: shared::Tab,
-}
-
-impl Default for AppState {
-    fn default() -> Self {
-        AppState {
-            current_tab: shared::Tab::default(),
-        }
-    }
-}
 
 fn widget(
     mut frame: ResMut<WidgetFrame>,
     mut events: ResMut<Events>,
-    mut state: ResMut<AppState>,
+    mut state: ResMut<shared::AppState>,
 ) -> WidgetResult {
     // Create main layout
     let chunks = Layout::default()
@@ -50,29 +38,39 @@ fn widget(
         "Connections",
         "Run Log",
     ])
-    .select(
-        state.current_tab.to_index()
-    )
+    .select(state.current_tab.to_index())
     .style(Style::default())
-    .highlight_style(
-        Style::default()
-            .bold()
-            .fg(Color::Black)
-            .bg(Color::White),
-    )
+    .highlight_style(Style::default().bold().fg(Color::Black).bg(Color::White))
     .divider("|")
     .block(Block::default().title("Tabs").borders(Borders::ALL));
-    frame.render_widget(tabs, chunks[0]);
-
+    frame.render_widget(tabs.clone(), chunks[0]);
     // Render main content based on selected tab
-    let content_block = match state.current_tab {
-        shared::Tab::SqlEditor => Block::default().title("SQL Editor").borders(Borders::ALL),
-        shared::Tab::TableView => Block::default().title("Table View").borders(Borders::ALL),
-        shared::Tab::CredentialsEditor => Block::default().title("Credentials Editor").borders(Borders::ALL),
-        shared::Tab::ConnectionsEditor => Block::default().title("Connections Editor").borders(Borders::ALL),
-        shared::Tab::RunLog => Block::default().title("Run Log").borders(Borders::ALL),
-    };
-    frame.render_widget(content_block, chunks[1]);
+    match state.current_tab {
+        shared::Tab::SqlEditor => frame.render_widget(
+            Block::default().title("SQL Editor").borders(Borders::ALL),
+            chunks[1],
+        ),
+        shared::Tab::TableView => frame.render_widget(
+            Block::default().title("Table View").borders(Borders::ALL),
+            chunks[1],
+        ),
+        shared::Tab::CredentialsEditor => frame.render_widget(
+            Block::default()
+                .title("Credentials Editor")
+                .borders(Borders::ALL),
+            chunks[1],
+        ),
+        shared::Tab::ConnectionsEditor => frame.render_widget(
+            Block::default()
+                .title("Connections Editor")
+                .borders(Borders::ALL),
+            chunks[1],
+        ),
+        shared::Tab::RunLog => frame.render_widget(
+            Block::default().title("Run Log").borders(Borders::ALL),
+            chunks[1],
+        ),
+    }
 
     // Render help bar
     let help_text = Paragraph::new(
@@ -101,10 +99,6 @@ fn widget(
 
 pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize the application state
-    let app_state = AppState {
-        current_tab: shared::Tab::default(),
-    };
-    Ok(App::new(100)?
-        .widgets(widget).states(app_state)
-        .run()?)
+    let app_state = shared::AppState::default();
+    Ok(App::new(100)?.widgets(widget).states(app_state).run()?)
 }

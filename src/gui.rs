@@ -2,7 +2,7 @@
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] use std::fmt::format;
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] use std::{collections::BTreeSet, fmt::format};
 
 // hide console window on Windows in release
 #[allow(unused_imports)]
@@ -15,46 +15,41 @@ use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
 
 #[allow(dead_code)]
 fn nord_color_theme() -> ColorTheme {
-  let bg = shared::NordColor::Nord0.as_str();
-  let cursor = shared::NordColor::Nord6.as_str();
-  let selection = shared::NordColor::Nord13.as_str();
-  let comments = shared::NordColor::Nord14.as_str();
-  let functions = shared::NordColor::Nord8.as_str();
-  let keywords = shared::NordColor::Nord15.as_str();
-  let literals = shared::NordColor::Nord14.as_str();
-  let numerics = shared::NordColor::Nord13.as_str();
-  let punctuation = shared::NordColor::Nord5.as_str();
-  let strs = shared::NordColor::Nord14.as_str();
-  let types = shared::NordColor::Nord15.as_str();
-  let special = shared::NordColor::Nord12.as_str();
-
-            ColorTheme {
-                name: "Nord",
-                dark: true,
-                bg: &bg,
-                cursor: &cursor,
-                selection: &selection,
-                comments: &comments,
-                functions: &functions,
-                keywords: &keywords,
-                literals: &literals,
-                numerics: &numerics,
-                punctuation: &punctuation,
-                strs: &strs,
-                types: &types,
-                special: &special,
-            }
+  ColorTheme {
+      name: "Nord",
+      dark: true,
+      bg: shared::NordColor::Nord0.as_str(),
+      cursor: shared::NordColor::Nord6.as_str(),
+      selection: shared::NordColor::Nord13.as_str(),
+      comments: shared::NordColor::Nord3.as_str(),
+      functions: shared::NordColor::Nord8.as_str(),
+      keywords: shared::NordColor::Nord15.as_str(),
+      literals: shared::NordColor::Nord14.as_str(),
+      numerics: shared::NordColor::Nord13.as_str(),
+      punctuation: shared::NordColor::Nord5.as_str(),
+      strs: shared::NordColor::Nord14.as_str(),
+      types: shared::NordColor::Nord15.as_str(),
+      special: shared::NordColor::Nord0.as_str(),
+  }
 }
 
-struct Pane {
-    nr: shared::Tab,
+#[allow(dead_code)]
+fn toml_lang() -> Syntax {
+  Syntax::new("toml")
+    .with_comment("#")
+    .with_types(BTreeSet::from([
+        "string",
+        "integer",
+        "float",
+        "boolean",
+    ]))
 }
 struct TreeBehavior {}
 
-impl egui_tiles::Behavior<Pane> for TreeBehavior {
-    fn tab_title_for_pane(&mut self, pane: &Pane) -> egui::WidgetText {
+impl egui_tiles::Behavior<shared::AppState> for TreeBehavior {
+    fn tab_title_for_pane(&mut self, pane: &shared::AppState) -> egui::WidgetText {
         let label: &'static str;
-        match pane.nr {
+        match pane.current_tab {
             shared::Tab::SqlEditor => { label = "SQL Editor" },
             shared::Tab::TableView => { label = "Table View" },
             shared::Tab::CredentialsEditor => { label = "Credentials" },
@@ -68,23 +63,38 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
         &mut self,
         ui: &mut egui::Ui,
         _tile_id: egui_tiles::TileId,
-        pane: &mut Pane,
+        pane: &mut shared::AppState,
     ) -> egui_tiles::UiResponse {
         // Give each pane a unique color:
         let background_color = Color32::from_hex(shared::NordColor::Nord0.as_str()).unwrap();
         ui.painter().rect_filled(ui.max_rect(), 0.0, background_color);
         ui.label(self.tab_title_for_pane(pane).color(Color32::from_hex(shared::NordColor::Nord6.as_str()).unwrap()));
-        match pane.nr {
+        match pane.current_tab {
             shared::Tab::SqlEditor => {
-                let mut sql_query: String = String::from("select * from test;");
+              if ui.button("<-").clicked() {
+                if pane.selected_query > 0 {
+                    pane.selected_query -= 1;
+                }
+              }
+              if ui.button("->").clicked() {
+                if pane.selected_query < pane.sql_query.len() {
+                    pane.selected_query += 1;
+                }
+              }
+                let mut sql_query: String = pane.get_sql_query().unwrap_or(String::new());
                 CodeEditor::default()
                     .id_source("code editor")
                     .with_rows(12)
                     .with_fontsize(14.0)
-                    .with_theme(ColorTheme::GITHUB_DARK)//(nord_color_thme())
+                    .with_theme(nord_color_theme())//(nord_color_thme())
                     .with_syntax(Syntax::sql())
                     .with_numlines(true)
                     .show(ui, &mut sql_query);
+                  if pane.selected_query < pane.sql_query.len() {
+                    pane.set_sql_query(sql_query.clone());
+                  } else {
+                    pane.add_sql_query(sql_query.clone());
+                  }
             },
             shared::Tab::TableView => {},
             shared::Tab::CredentialsEditor => {
@@ -93,8 +103,8 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
                     .id_source("code editor")
                     .with_rows(12)
                     .with_fontsize(14.0)
-                    .with_theme(ColorTheme::GITHUB_DARK)//(nord_color_thme())
-                    .with_syntax(Syntax::sql())
+                    .with_theme(nord_color_theme())//(nord_color_thme())
+                    .with_syntax(toml_lang())
                     .with_numlines(true)
                     .show(ui, &mut credential);
                 shared::set_credential_content(credential).expect("Failed to save connections");
@@ -105,8 +115,8 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
                     .id_source("code editor")
                     .with_rows(12)
                     .with_fontsize(14.0)
-                    .with_theme(ColorTheme::GITHUB_DARK)//(nord_color_thme())
-                    .with_syntax(Syntax::sql())
+                    .with_theme(nord_color_theme())//(nord_color_thme())
+                    .with_syntax(toml_lang())
                     .with_numlines(true)
                     .show(ui, &mut connections);
                 shared::set_connections_content(connections).expect("Failed to save connections");
@@ -145,10 +155,10 @@ pub fn main_gui() -> Result<(), eframe::Error> {
     })
 }
 
-fn create_tree() -> egui_tiles::Tree<Pane> {
+fn create_tree() -> egui_tiles::Tree<shared::AppState> {
     let mut next_view_nr: shared::Tab = shared::Tab::SqlEditor;
     let mut gen_pane = || {
-        let pane = Pane { nr: next_view_nr };
+        let pane = shared::AppState { current_tab: next_view_nr, ..Default::default() };
         match next_view_nr {
             shared::Tab::SqlEditor => {next_view_nr = shared::Tab::TableView;},
             shared::Tab::TableView => {next_view_nr = shared::Tab::CredentialsEditor;},

@@ -1,5 +1,6 @@
-# simplesql
+<!-- cargo-rdme start -->
 
+# simplesql
 **simplesql** is a modern, lightweight SQL client that runs in either Terminal (TUI) or optional Graphical (GUI) mode. Built for developers, DBAs, and power users who need fast, intuitive access to their databases.
 
 ## 🔧 Features
@@ -52,3 +53,5 @@ Licensed under the [MIT License](LICENSE).
 ---
 
 Made with ❤️ in Rust – because SQL should be simple.
+
+<!-- cargo-rdme end -->

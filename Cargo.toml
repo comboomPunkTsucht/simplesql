@@ -5,6 +5,7 @@ edition = "2024"
 description = "SQL made simple — in your terminal or with a GUI."
 license = "MIT"
 authors = ["mcpeaps_HD<mcpeaps_HD@comboompunktsucht.app>"]
+readme = "README.md"
 
 [package.metadata.build-targets]
 default = [

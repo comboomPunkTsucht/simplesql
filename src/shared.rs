@@ -196,24 +196,6 @@ impl NordColor {
 
     #[allow(dead_code)]
     pub fn as_str(&self) -> &'static str {
-        /*match self {
-            NordColor::Nord0 => "#2e3440ff",
-            NordColor::Nord1 => "#3b4252ff",
-            NordColor::Nord2 => "#434c5eff",
-            NordColor::Nord3 => "#4c566aff",
-            NordColor::Nord4 => "#d8dee9ff",
-            NordColor::Nord5 => "#e5e9f0ff",
-            NordColor::Nord6 => "#eceff4ff",
-            NordColor::Nord7 => "#8fbcbbff",
-            NordColor::Nord8 => "#88c0d0ff",
-            NordColor::Nord9 => "#81a1c1ff",
-            NordColor::Nord10 => "#5e81acff",
-            NordColor::Nord11 => "#bf616aff",
-            NordColor::Nord12 => "#d08770ff",
-            NordColor::Nord13 => "#ebcb8bff",
-            NordColor::Nord14 => "#a3be8cff",
-            NordColor::Nord15 => "#b48eadff",
-        }*/
         Box::leak(self.to_string().into_boxed_str())
     }
 }

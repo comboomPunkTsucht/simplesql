@@ -15,6 +15,14 @@ use egui_logger;
 use egui_tiles::{Tile, TileId, Tiles};
 
 #[allow(dead_code)]
+impl shared::NordColor {
+    pub fn to_color32(&self) -> Color32 {
+        Color32::from_hex(self.as_str()).unwrap()
+    }
+}
+
+
+#[allow(dead_code)]
 fn nord_color_theme() -> ColorTheme {
     ColorTheme {
         name: "Nord",
@@ -62,12 +70,12 @@ impl egui_tiles::Behavior<shared::AppState> for TreeBehavior {
         pane: &mut shared::AppState,
     ) -> egui_tiles::UiResponse {
         // Give each pane a unique color:
-        let background_color = Color32::from_hex(shared::NordColor::Nord0.as_str()).unwrap();
+        let background_color = shared::NordColor::Nord0.to_color32();
         ui.painter()
             .rect_filled(ui.max_rect(), 0.0, background_color);
         ui.label(
             self.tab_title_for_pane(pane)
-                .color(Color32::from_hex(shared::NordColor::Nord6.as_str()).unwrap()),
+                .color(shared::NordColor::Nord6.to_color32()),
         );
         match pane.current_tab {
             shared::Tab::SqlEditor => {

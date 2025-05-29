@@ -48,3 +48,5 @@ egui_logger = "*"
 puffin = "*"
 egui_file = "*"
 egui-notify = "*"
+# shared.rs
+sqlx = { version = "*", features = [ "runtime-tokio", "tls-rustls-ring-native-roots" ] }

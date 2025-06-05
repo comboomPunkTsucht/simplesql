@@ -4,20 +4,20 @@
 			"path": "."
 		},
 		{
-			"path": ".simplesql-unix",
-			"name": ".simplesql (Linux/Mac/FreeBSD)",
-			"when": "os != 'win32'"
+			"path": ".simplesql",
+			"name": ".simplesql"
 		},
-		{
-			"path": ".simplesql-windows",
-			"name": ".simplesql (Windows)",
-			"when": "os == 'win32'"
-		}
 	],
 	"settings": {
 		"editor.formatOnSave": true,
 		"editor.tabSize": 2,
-		"editor.defaultFormatter": "rust-lang.rust-analyzer"
+		"editor.defaultFormatter": "rust-lang.rust-analyzer",
+		"json.schemas": [
+    {
+      "fileMatch": ["config.json", "config.jsonc"],
+      "url": "./src/simplesql_config.schema.json"
+    }
+  ]
 	},
 	"extensions": {
 		"recommendations": [

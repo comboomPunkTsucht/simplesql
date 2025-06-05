@@ -3,7 +3,6 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode};
 use edtui::{
     EditorEventHandler, EditorState, EditorStatusLine, EditorTheme, EditorView, Lines,
     SyntaxHighlighter,
@@ -16,7 +15,7 @@ use ratatui::{
     widgets::*,
 };
 use std::error::Error;
-use widgetui::{*,crossterm::event};
+use widgetui::{*,crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode}};
 
 use crate::shared;
 

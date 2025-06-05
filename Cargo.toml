@@ -36,6 +36,7 @@ widgetui = "*"
 crossterm = "*"
 ratatui_simple_logger = "*"
 tui-scrollview = "*"
+edtui = "*"
 # main.rs
 clap = "*"
 # gui.rs

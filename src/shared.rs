@@ -168,7 +168,7 @@ pub enum NordColor {
 }
 
 impl NordColor {
-    const fn value(&self) -> u32 {
+    pub fn value(&self) -> u32 {
         match self {
             NordColor::Nord0 => NordColor::Nord0 as u32,
             NordColor::Nord1 => NordColor::Nord1 as u32,

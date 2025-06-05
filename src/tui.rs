@@ -3,8 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use crossterm::event::KeyCode;
-use egui::TextEdit;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode};
+use edtui::{EditorEventHandler, EditorState, EditorStatusLine, EditorTheme, EditorView, Lines};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::*,
@@ -16,10 +16,25 @@ use widgetui::*;
 
 use crate::shared;
 
+#[allow(dead_code)]
+#[derive(Clone, State)]
+pub struct ExtendedAppState {
+    pub shared: shared::AppState,
+    pub editor_state: EditorState,
+}
+impl Default for ExtendedAppState {
+    fn default() -> Self {
+        ExtendedAppState {
+            shared: shared::AppState::default(),
+            editor_state: EditorState::default(),
+        }
+    }
+}
+
 fn widget(
     mut frame: ResMut<WidgetFrame>,
     mut events: ResMut<Events>,
-    mut state: ResMut<shared::AppState>,
+    mut state: ResMut<ExtendedAppState>,
 ) -> WidgetResult {
     // Create main layout
     let chunks = Layout::default()
@@ -31,6 +46,21 @@ fn widget(
         ])
         .split(frame.size());
 
+    match state.shared.current_tab {
+        shared::Tab::SqlEditor => {
+            state.editor_state.lines = Lines::from(state.shared.sql_query.clone());
+        }
+        shared::Tab::CredentialsEditor => {
+            state.editor_state.lines =
+                Lines::from(shared::get_credential_content().unwrap_or_default());
+        }
+        shared::Tab::ConnectionsEditor => {
+            state.editor_state.lines =
+                Lines::from(shared::get_connections_content().unwrap_or_default());
+        }
+        _ => {}
+    }
+
     // Create and render tabs
     let tabs = Tabs::new(vec![
         "SQL Editor",
@@ -39,17 +69,23 @@ fn widget(
         "Connections",
         "Run Log",
     ])
-    .select(state.current_tab.to_index())
-    .style(Style::default())
+    .select(state.shared.current_tab.to_index())
+    .style(Style::default().bg(Color::Black).fg(Color::White))
     .highlight_style(Style::default().bold().fg(Color::Black).bg(Color::White))
     .divider("|")
-    .block(Block::default().title("Tabs").borders(Borders::ALL));
+    .block(
+        Block::default()
+            .title("Tabs")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Thick),
+    );
     frame.render_widget(tabs.clone(), chunks[0]);
     // Render main content based on selected tab
-    match state.current_tab {
+    match state.shared.current_tab {
         shared::Tab::SqlEditor => frame.render_widget(
-            Paragraph::new(state.sql_query.clone())
-                .block(Block::default().title("SQL Editor").borders(Borders::ALL)),
+            EditorView::new(&mut state.editor_state)
+                .wrap(true)
+                .theme(Theme::new().editor),
             chunks[1],
         ),
         shared::Tab::TableView => frame.render_widget(
@@ -57,15 +93,15 @@ fn widget(
             chunks[1],
         ),
         shared::Tab::CredentialsEditor => frame.render_widget(
-            Block::default()
-                .title("Credentials Editor")
-                .borders(Borders::ALL),
+            EditorView::new(&mut state.editor_state)
+                .wrap(true)
+                .theme(Theme::new().editor),
             chunks[1],
         ),
         shared::Tab::ConnectionsEditor => frame.render_widget(
-            Block::default()
-                .title("Connections Editor")
-                .borders(Borders::ALL),
+            EditorView::new(&mut state.editor_state)
+                .wrap(true)
+                .theme(Theme::new().editor),
             chunks[1],
         ),
         shared::Tab::RunLog => frame.render_widget(
@@ -78,22 +114,42 @@ fn widget(
     let help_text = Paragraph::new(
         "F1: SQL Editor | F2: Table View | F3: Credentials | F4: Connections | F5: Run Log | F12: Quit"
     )
-    .block(Block::default().title("Help").borders(Borders::ALL));
+        .style(Style::default().fg(Color::Gray).bg(Color::Black))
+        .block(Block::default().title("Help").borders(Borders::ALL).border_type(BorderType::Thick));
     frame.render_widget(help_text, chunks[2]);
 
     // Handle key events
-    if events.key(KeyCode::F(12)) {
+    if (events.key(KeyCode::F(12)))
+        || events.key_event(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL))
+        || events.key_event(KeyEvent::new(KeyCode::Char('d'), KeyModifiers::CONTROL))
+    {
         events.register_exit();
     } else if events.key(KeyCode::F(1)) {
-        state.current_tab = shared::Tab::SqlEditor;
+        state.shared.current_tab = shared::Tab::SqlEditor;
     } else if events.key(KeyCode::F(2)) {
-        state.current_tab = shared::Tab::TableView;
+        state.shared.current_tab = shared::Tab::TableView;
     } else if events.key(KeyCode::F(3)) {
-        state.current_tab = shared::Tab::CredentialsEditor;
+        state.shared.current_tab = shared::Tab::CredentialsEditor;
     } else if events.key(KeyCode::F(4)) {
-        state.current_tab = shared::Tab::ConnectionsEditor;
+        state.shared.current_tab = shared::Tab::ConnectionsEditor;
     } else if events.key(KeyCode::F(5)) {
-        state.current_tab = shared::Tab::RunLog;
+        state.shared.current_tab = shared::Tab::RunLog;
+    }
+
+    if let Some(event) = events.event.clone() {
+        EditorEventHandler::default().on_event(event, &mut state.editor_state);
+    }
+    match state.shared.current_tab {
+        shared::Tab::SqlEditor => {
+            state.shared.sql_query = get_editor_lines_as_string(&state);
+        }
+        shared::Tab::CredentialsEditor => {
+            shared::set_credential_content(get_editor_lines_as_string(&state));
+        }
+        shared::Tab::ConnectionsEditor => {
+            shared::set_connections_content(get_editor_lines_as_string(&state));
+        }
+        _ => {}
     }
 
     Ok(())
@@ -101,6 +157,43 @@ fn widget(
 
 pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize the application state
-    let app_state = shared::AppState::default();
+    let app_state = ExtendedAppState::default();
     Ok(App::new(100)?.widgets(widget).states(app_state).run()?)
+}
+
+#[derive(Default)]
+pub struct Theme<'a> {
+    pub editor: EditorTheme<'a>,
+}
+
+impl<'a> Theme<'a> {
+    pub fn new() -> Self {
+        Self {
+            editor: EditorTheme::default()
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .border_style(Style::default().fg(Color::White).bg(Color::Black))
+                        .border_type(BorderType::Thick),
+                )
+                .base(Style::default().bg(Color::Black).fg(Color::White))
+                .cursor_style(Style::default().bg(Color::White).fg(Color::Black))
+                .selection_style(Style::default().bg(Color::Gray).fg(Color::Black))
+                .status_line(
+                    EditorStatusLine::default()
+                        .style_text(Style::default().fg(Color::White).bg(Color::Black))
+                        .style_line(Style::default().fg(Color::LightGreen).bg(Color::Black))
+                        .align_left(true),
+                ),
+        }
+    }
+}
+
+pub fn get_editor_lines_as_string(state: &ExtendedAppState) -> String {
+    state
+        .editor_state
+        .lines
+        .flatten(&Some('\n'))
+        .into_iter()
+        .collect()
 }

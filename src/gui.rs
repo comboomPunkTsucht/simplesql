@@ -43,10 +43,11 @@ fn nord_color_theme() -> ColorTheme {
 }
 
 #[allow(dead_code)]
-fn toml_lang() -> Syntax {
-    Syntax::new("toml")
-        .with_comment("#")
-        .with_types(BTreeSet::from(["string", "integer", "float", "boolean"]))
+fn jsonc_lang() -> Syntax {
+    Syntax::new("jsonc")
+        .with_comment("//")
+        .with_comment_multiline(["/*","*/"])
+        .with_types(BTreeSet::from(["string", "integer", "float", "boolean", "object","array"]))
 }
 struct TreeBehavior {}
 
@@ -96,7 +97,7 @@ impl egui_tiles::Behavior<shared::AppState> for TreeBehavior {
                     .with_rows(12)
                     .with_fontsize(14.0)
                     .with_theme(nord_color_theme()) //(nord_color_thme())
-                    .with_syntax(toml_lang())
+                    .with_syntax(jsonc_lang())
                     .with_numlines(true)
                     .show(ui, &mut config);
                 shared::set_config_content(config).expect("Failed to save connections");

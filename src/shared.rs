@@ -77,7 +77,44 @@ fn get_config_path() -> String {
 }
 
 fn get_config_defaults() -> String {
-    r#"#test
+    r#"{
+  "$schema": "https://raw.githubusercontent.com/comboomPunkTsucht/simplesql/refs/heads/main/src/somplesql_config.jsonc"
+  "connections": [
+    {
+      "name": "Local mariaDB",
+      "type": "mariadb",
+      "host": "localhost",
+      "port": 3306
+    },
+    {
+      "name": "Local MySQL",
+      "type": "mysql",
+      "host": "localhost",
+      "port": 3306
+    },
+    {
+      "name": "Local PostgreSQL",
+      "type": "postgresql",
+      "host": "localhost",
+      "port": 5432
+    }
+  ],
+  //test
+  "credentials": [
+    {
+      "name": "mysql_default",
+      "connection": "Local mariaDB",
+      "username": "root",
+      "password": ""
+    },
+    {
+      "name": "postgresql_default",
+      "connection": "Local PostgreSQL",
+      "username": "postgres",
+      "password": ""
+    }
+  ]
+}
 "#
     .to_string()
 }

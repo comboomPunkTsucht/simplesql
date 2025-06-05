@@ -203,3 +203,4 @@ impl NordColor {
         Box::leak(self.to_string().into_boxed_str())
     }
 }
+

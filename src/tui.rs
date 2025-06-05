@@ -16,7 +16,7 @@ use ratatui::{
     widgets::*,
 };
 use std::error::Error;
-use widgetui::*;
+use widgetui::{*,crossterm::event};
 
 use crate::shared;
 

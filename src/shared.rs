@@ -78,7 +78,7 @@ fn get_config_path() -> String {
 
 fn get_config_defaults() -> String {
     r#"{
-  "$schema": "https://raw.githubusercontent.com/comboomPunkTsucht/simplesql/refs/heads/main/src/somplesql_config.json",
+  "$schema": "https://raw.githubusercontent.com/comboomPunkTsucht/simplesql/main/src/somplesql_config.json",
   "connections": [
     {
       "name": "Local mariaDB",

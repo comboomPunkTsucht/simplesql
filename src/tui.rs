@@ -118,6 +118,22 @@ fn widget(
         .block(Block::default().title("Help").borders(Borders::ALL).border_type(BorderType::Thick));
     frame.render_widget(help_text, chunks[2]);
 
+    // Handle editor events
+    if let Some(event) = events.event.clone() {
+        EditorEventHandler::default().on_event(event, &mut state.editor_state);
+    }
+    match state.shared.current_tab {
+        shared::Tab::SqlEditor => {
+            state.shared.sql_query = get_editor_lines_as_string(&state);
+        }
+        shared::Tab::CredentialsEditor => {
+            let _ = shared::set_credential_content(get_editor_lines_as_string(&state));
+        }
+        shared::Tab::ConnectionsEditor => {
+            let _ = shared::set_connections_content(get_editor_lines_as_string(&state));
+        }
+        _ => {}
+    }
     // Handle key events
     if (events.key(KeyCode::F(12)))
         || events.key_event(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL))
@@ -134,22 +150,6 @@ fn widget(
         state.shared.current_tab = shared::Tab::ConnectionsEditor;
     } else if events.key(KeyCode::F(5)) {
         state.shared.current_tab = shared::Tab::RunLog;
-    }
-
-    if let Some(event) = events.event.clone() {
-        EditorEventHandler::default().on_event(event, &mut state.editor_state);
-    }
-    match state.shared.current_tab {
-        shared::Tab::SqlEditor => {
-            state.shared.sql_query = get_editor_lines_as_string(&state);
-        }
-        shared::Tab::CredentialsEditor => {
-            shared::set_credential_content(get_editor_lines_as_string(&state));
-        }
-        shared::Tab::ConnectionsEditor => {
-            shared::set_connections_content(get_editor_lines_as_string(&state));
-        }
-        _ => {}
     }
 
     Ok(())

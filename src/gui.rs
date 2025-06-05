@@ -56,8 +56,7 @@ impl egui_tiles::Behavior<shared::AppState> for TreeBehavior {
         match pane.current_tab {
             shared::Tab::SqlEditor => label = "SQL Editor",
             shared::Tab::TableView => label = "Table View",
-            shared::Tab::CredentialsEditor => label = "Credentials",
-            shared::Tab::ConnectionsEditor => label = "Connections",
+            shared::Tab::ConfigEditor => label = "Config Editor",
             shared::Tab::RunLog => label = "Run and Log",
         }
         format!("{}", label).into()
@@ -89,9 +88,9 @@ impl egui_tiles::Behavior<shared::AppState> for TreeBehavior {
                     .show(ui, &mut pane.sql_query);
             }
             shared::Tab::TableView => {}
-            shared::Tab::CredentialsEditor => {
-                let mut credential: String =
-                    shared::get_credential_content().expect("Failed to load connections");
+            shared::Tab::ConfigEditor => {
+                let mut config: String =
+                    shared::get_config_content().expect("Failed to load config");
                 CodeEditor::default()
                     .id_source("code editor")
                     .with_rows(12)
@@ -99,21 +98,8 @@ impl egui_tiles::Behavior<shared::AppState> for TreeBehavior {
                     .with_theme(nord_color_theme()) //(nord_color_thme())
                     .with_syntax(toml_lang())
                     .with_numlines(true)
-                    .show(ui, &mut credential);
-                shared::set_credential_content(credential).expect("Failed to save connections");
-            }
-            shared::Tab::ConnectionsEditor => {
-                let mut connections: String =
-                    shared::get_connections_content().expect("Failed to load connections");
-                CodeEditor::default()
-                    .id_source("code editor")
-                    .with_rows(12)
-                    .with_fontsize(14.0)
-                    .with_theme(nord_color_theme()) //(nord_color_thme())
-                    .with_syntax(toml_lang())
-                    .with_numlines(true)
-                    .show(ui, &mut connections);
-                shared::set_connections_content(connections).expect("Failed to save connections");
+                    .show(ui, &mut config);
+                shared::set_config_content(config).expect("Failed to save connections");
             }
             shared::Tab::RunLog => {
                 egui_logger::logger_ui().show(ui);
@@ -159,12 +145,9 @@ fn create_tree() -> egui_tiles::Tree<shared::AppState> {
                 next_view_nr = shared::Tab::TableView;
             }
             shared::Tab::TableView => {
-                next_view_nr = shared::Tab::CredentialsEditor;
+                next_view_nr = shared::Tab::ConfigEditor;
             }
-            shared::Tab::CredentialsEditor => {
-                next_view_nr = shared::Tab::ConnectionsEditor;
-            }
-            shared::Tab::ConnectionsEditor => {
+            shared::Tab::ConfigEditor => {
                 next_view_nr = shared::Tab::RunLog;
             }
             _ => {
@@ -177,7 +160,6 @@ fn create_tree() -> egui_tiles::Tree<shared::AppState> {
     let mut tiles = egui_tiles::Tiles::default();
 
     let mut tabs = vec![];
-    tabs.push(tiles.insert_pane(gen_pane()));
     tabs.push(tiles.insert_pane(gen_pane()));
     tabs.push(tiles.insert_pane(gen_pane()));
     tabs.push(tiles.insert_pane(gen_pane()));

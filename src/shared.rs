@@ -16,8 +16,7 @@ use egui::TextBuffer;
 pub enum Tab {
     SqlEditor,
     TableView,
-    CredentialsEditor,
-    ConnectionsEditor,
+    ConfigEditor,
     RunLog,
 }
 impl Default for Tab {
@@ -32,9 +31,8 @@ impl Tab {
         match index {
             0 => Tab::SqlEditor,
             1 => Tab::TableView,
-            2 => Tab::CredentialsEditor,
-            3 => Tab::ConnectionsEditor,
-            4 => Tab::RunLog,
+            2 => Tab::ConfigEditor,
+            3 => Tab::RunLog,
             _ => panic!("Invalid tab index"),
         }
     }
@@ -43,9 +41,8 @@ impl Tab {
         match self {
             Tab::SqlEditor => 0,
             Tab::TableView => 1,
-            Tab::CredentialsEditor => 2,
-            Tab::ConnectionsEditor => 3,
-            Tab::RunLog => 4,
+            Tab::ConfigEditor => 2,
+            Tab::RunLog => 3,
         }
     }
 }
@@ -75,21 +72,11 @@ fn get_config_base_path() -> String {
         _ => panic!("Unsupported platform"),
     }
 }
-fn get_credential_path() -> String {
-    format!("{}/credential.jsonc", get_config_base_path())
+fn get_config_path() -> String {
+    format!("{}/config.jsonc", get_config_base_path())
 }
 
-fn get_connections_path() -> String {
-    format!("{}/connections.jsonc", get_config_base_path())
-}
-
-fn get_credential_defaults() -> String {
-    r#"#test
-"#
-    .to_string()
-}
-
-fn get_connections_defaults() -> String {
+fn get_config_defaults() -> String {
     r#"#test
 "#
     .to_string()
@@ -97,48 +84,28 @@ fn get_connections_defaults() -> String {
 
 pub fn check_and_gen_config() -> std::io::Result<()> {
     // 1. Check and create config directory if it doesn't exist
-    let config_path = get_config_base_path();
-    create_dir_all(&config_path)?;
+    let config_base_path = get_config_base_path();
+    create_dir_all(&config_base_path)?;
 
     // 2. Check and create credential file if it doesn't exist
-    let credential_path = get_credential_path();
-    if !std::path::Path::new(&credential_path).exists() {
-        let mut file = File::create(&credential_path)?;
-        file.write_all(get_credential_defaults().as_bytes())?;
-    }
-
-    // 3. Check and create connections file if it doesn't exist
-    let connections_path = get_connections_path();
-    if !std::path::Path::new(&connections_path).exists() {
-        let mut file = File::create(&connections_path)?;
-        file.write_all(get_connections_defaults().as_bytes())?;
+    let config_path = get_config_path();
+    if !std::path::Path::new(&config_path).exists() {
+        let mut file = File::create(&config_path)?;
+        file.write_all(get_config_defaults().as_bytes())?;
     }
 
     Ok(())
 }
 
-pub fn get_credential_content() -> std::io::Result<String> {
-    let mut f = File::open(get_credential_path())?;
+pub fn get_config_content() -> std::io::Result<String> {
+    let mut f = File::open(get_config_path())?;
     let mut buffer = String::new();
     f.read_to_string(&mut buffer)?;
     Ok(buffer)
 }
 
-pub fn get_connections_content() -> std::io::Result<String> {
-    let mut f = File::open(get_connections_path())?;
-    let mut buffer = String::new();
-    f.read_to_string(&mut buffer)?;
-    Ok(buffer)
-}
-
-pub fn set_credential_content(buffer: String) -> std::io::Result<()> {
-    let mut f = File::create(get_credential_path())?;
-    f.write_all(buffer.as_bytes())?;
-    Ok(())
-}
-
-pub fn set_connections_content(buffer: String) -> std::io::Result<()> {
-    let mut f = File::create(get_connections_path())?;
+pub fn set_config_content(buffer: String) -> std::io::Result<()> {
+    let mut f = File::create(get_config_path())?;
     f.write_all(buffer.as_bytes())?;
     Ok(())
 }

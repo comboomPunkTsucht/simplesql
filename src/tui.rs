@@ -54,13 +54,9 @@ fn widget(
         shared::Tab::SqlEditor => {
             state.editor_state.lines = Lines::from(state.shared.sql_query.clone());
         }
-        shared::Tab::CredentialsEditor => {
+        shared::Tab::ConfigEditor => {
             state.editor_state.lines =
-                Lines::from(shared::get_credential_content().unwrap_or_default());
-        }
-        shared::Tab::ConnectionsEditor => {
-            state.editor_state.lines =
-                Lines::from(shared::get_connections_content().unwrap_or_default());
+                Lines::from(shared::get_config_content().unwrap_or_default());
         }
         _ => {}
     }
@@ -74,8 +70,7 @@ fn widget(
     let tabs = Tabs::new(vec![
         "SQL Editor",
         "Table View",
-        "Credentials",
-        "Connections",
+        "Config Editor",
         "Run Log",
     ])
     .select(state.shared.current_tab.to_index())
@@ -102,14 +97,7 @@ fn widget(
             Block::default().title("Table View").borders(Borders::ALL),
             chunks[1],
         ),
-        shared::Tab::CredentialsEditor => frame.render_widget(
-            EditorView::new(&mut state.editor_state)
-                .wrap(true)
-                .theme(Theme::new().editor)
-                .syntax_highlighter(Some(jsonc_syntax_highlighter)),
-            chunks[1],
-        ),
-        shared::Tab::ConnectionsEditor => frame.render_widget(
+        shared::Tab::ConfigEditor => frame.render_widget(
             EditorView::new(&mut state.editor_state)
                 .wrap(true)
                 .theme(Theme::new().editor)
@@ -124,7 +112,7 @@ fn widget(
 
     // Render help bar
     let help_text = Paragraph::new(
-        "F1: SQL Editor | F2: Table View | F3: Credentials | F4: Connections | F5: Run Log | F12: Quit"
+        "F1: SQL Editor | F2: Table View | F3: Config Editor | F4: Run Log | F12: Quit"
     )
         .style(Style::default().fg(Color::Gray).bg(Color::Black))
         .block(Block::default().title("Help").borders(Borders::ALL).border_type(BorderType::Thick));
@@ -138,11 +126,8 @@ fn widget(
         shared::Tab::SqlEditor => {
             state.shared.sql_query = get_editor_lines_as_string(&state);
         }
-        shared::Tab::CredentialsEditor => {
-            let _ = shared::set_credential_content(get_editor_lines_as_string(&state));
-        }
-        shared::Tab::ConnectionsEditor => {
-            let _ = shared::set_connections_content(get_editor_lines_as_string(&state));
+        shared::Tab::ConfigEditor => {
+            let _ = shared::set_config_content(get_editor_lines_as_string(&state));
         }
         _ => {}
     }
@@ -157,10 +142,8 @@ fn widget(
     } else if events.key(KeyCode::F(2)) {
         state.shared.current_tab = shared::Tab::TableView;
     } else if events.key(KeyCode::F(3)) {
-        state.shared.current_tab = shared::Tab::CredentialsEditor;
-    } else if events.key(KeyCode::F(4)) {
-        state.shared.current_tab = shared::Tab::ConnectionsEditor;
-    } else if events.key(KeyCode::F(5)) {
+        state.shared.current_tab = shared::Tab::ConfigEditor;
+    }  else if events.key(KeyCode::F(4)) {
         state.shared.current_tab = shared::Tab::RunLog;
     }
 

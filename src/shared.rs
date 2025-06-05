@@ -76,11 +76,11 @@ fn get_config_base_path() -> String {
     }
 }
 fn get_credential_path() -> String {
-    format!("{}/credential.toml", get_config_base_path())
+    format!("{}/credential.jsonc", get_config_base_path())
 }
 
 fn get_connections_path() -> String {
-    format!("{}/connections.toml", get_config_base_path())
+    format!("{}/connections.jsonc", get_config_base_path())
 }
 
 fn get_credential_defaults() -> String {

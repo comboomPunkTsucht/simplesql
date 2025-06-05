@@ -4,7 +4,11 @@
 // https://opensource.org/licenses/MIT
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode};
-use edtui::{EditorEventHandler, EditorState, EditorStatusLine, EditorTheme, EditorView, Lines};
+use edtui::{
+    EditorEventHandler, EditorState, EditorStatusLine, EditorTheme, EditorView, Lines,
+    SyntaxHighlighter,
+    syntect::parsing::{Scope, SyntaxReference},
+};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::*,
@@ -60,6 +64,11 @@ fn widget(
         }
         _ => {}
     }
+    // Create SQL SyntaxHighlighter
+    let sql_syntax_highlighter: SyntaxHighlighter = SyntaxHighlighter::new("nord", "sql");
+
+    //jsonc SyntaxHighlighter
+    let jsonc_syntax_highlighter: SyntaxHighlighter = SyntaxHighlighter::new("nord", "json");
 
     // Create and render tabs
     let tabs = Tabs::new(vec![
@@ -85,7 +94,8 @@ fn widget(
         shared::Tab::SqlEditor => frame.render_widget(
             EditorView::new(&mut state.editor_state)
                 .wrap(true)
-                .theme(Theme::new().editor),
+                .theme(Theme::new().editor)
+                .syntax_highlighter(Some(sql_syntax_highlighter)),
             chunks[1],
         ),
         shared::Tab::TableView => frame.render_widget(
@@ -95,13 +105,15 @@ fn widget(
         shared::Tab::CredentialsEditor => frame.render_widget(
             EditorView::new(&mut state.editor_state)
                 .wrap(true)
-                .theme(Theme::new().editor),
+                .theme(Theme::new().editor)
+                .syntax_highlighter(Some(jsonc_syntax_highlighter)),
             chunks[1],
         ),
         shared::Tab::ConnectionsEditor => frame.render_widget(
             EditorView::new(&mut state.editor_state)
                 .wrap(true)
-                .theme(Theme::new().editor),
+                .theme(Theme::new().editor)
+                .syntax_highlighter(Some(jsonc_syntax_highlighter)),
             chunks[1],
         ),
         shared::Tab::RunLog => frame.render_widget(

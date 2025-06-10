@@ -15,7 +15,10 @@ use ratatui::{
     widgets::*,
 };
 use std::error::Error;
-use widgetui::{*,crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode}};
+use widgetui::{
+    crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode},
+    *,
+};
 
 use crate::shared;
 
@@ -55,7 +58,7 @@ fn widget(
         }
         shared::Tab::ConfigEditor => {
             state.editor_state.lines =
-                Lines::from(shared::get_config_content().unwrap_or_default());
+                Lines::from(shared::get_config_content(&mut state.shared).unwrap_or_default());
         }
         _ => {}
     }
@@ -66,22 +69,17 @@ fn widget(
     let jsonc_syntax_highlighter: SyntaxHighlighter = SyntaxHighlighter::new("nord", "json");
 
     // Create and render tabs
-    let tabs = Tabs::new(vec![
-        "SQL Editor",
-        "Table View",
-        "Config Editor",
-        "Run Log",
-    ])
-    .select(state.shared.current_tab.to_index())
-    .style(Style::default().bg(Color::Black).fg(Color::White))
-    .highlight_style(Style::default().bold().fg(Color::Black).bg(Color::White))
-    .divider("|")
-    .block(
-        Block::default()
-            .title("Tabs")
-            .borders(Borders::ALL)
-            .border_type(BorderType::Thick),
-    );
+    let tabs = Tabs::new(vec!["SQL Editor", "Table View", "Config Editor"])
+        .select(state.shared.current_tab.to_index())
+        .style(Style::default().bg(Color::Black).fg(Color::White))
+        .highlight_style(Style::default().bold().fg(Color::Black).bg(Color::White))
+        .divider("|")
+        .block(
+            Block::default()
+                .title("Tabs")
+                .borders(Borders::ALL)
+                .border_type(BorderType::Thick),
+        );
     frame.render_widget(tabs.clone(), chunks[0]);
     // Render main content based on selected tab
     match state.shared.current_tab {
@@ -103,18 +101,19 @@ fn widget(
                 .syntax_highlighter(Some(jsonc_syntax_highlighter)),
             chunks[1],
         ),
-        shared::Tab::RunLog => frame.render_widget(
-            Block::default().title("Run Log").borders(Borders::ALL),
-            chunks[1],
-        ),
     }
 
     // Render help bar
     let help_text = Paragraph::new(
-        "F1: SQL Editor | F2: Table View | F3: Config Editor | F4: Run Log | F12: Quit"
+        format!("F1: SQL Editor | F2: Table View | F3: Config Editor | F4: Selected User: {} | F5: Run the SQL Statement | F12: Quit", state.shared.user),
     )
-        .style(Style::default().fg(Color::Gray).bg(Color::Black))
-        .block(Block::default().title("Help").borders(Borders::ALL).border_type(BorderType::Thick));
+    .style(Style::default().fg(Color::Gray).bg(Color::Black))
+    .block(
+        Block::default()
+            .title("Help")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Thick),
+    );
     frame.render_widget(help_text, chunks[2]);
 
     // Handle editor events
@@ -142,8 +141,15 @@ fn widget(
         state.shared.current_tab = shared::Tab::TableView;
     } else if events.key(KeyCode::F(3)) {
         state.shared.current_tab = shared::Tab::ConfigEditor;
-    }  else if events.key(KeyCode::F(4)) {
-        state.shared.current_tab = shared::Tab::RunLog;
+    } else if events.key(KeyCode::F(4)) {
+        let users = state.shared.config["credentials"].members().collect::<Vec<_>>();
+        if !users.is_empty() {
+            let current_idx = users.iter().position(|u| u.to_string() == state.shared.user).unwrap_or(0);
+            let next_idx = (current_idx + 1) % users.len();
+            state.shared.user = users[next_idx]["name"].to_string();
+        }
+} else if events.key(KeyCode::F(5)) {
+        //println!("test")
     }
 
     Ok(())

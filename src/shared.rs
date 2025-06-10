@@ -8,7 +8,8 @@ use std::{
     fs::{File, create_dir_all},
     io::{Read, Write},
 };
-use widgetui::State;
+use widgetui::{states, State};
+use json;
 
 use egui::TextBuffer;
 
@@ -17,7 +18,6 @@ pub enum Tab {
     SqlEditor,
     TableView,
     ConfigEditor,
-    RunLog,
 }
 impl Default for Tab {
     fn default() -> Self {
@@ -32,7 +32,6 @@ impl Tab {
             0 => Tab::SqlEditor,
             1 => Tab::TableView,
             2 => Tab::ConfigEditor,
-            3 => Tab::RunLog,
             _ => panic!("Invalid tab index"),
         }
     }
@@ -42,7 +41,6 @@ impl Tab {
             Tab::SqlEditor => 0,
             Tab::TableView => 1,
             Tab::ConfigEditor => 2,
-            Tab::RunLog => 3,
         }
     }
 }
@@ -51,14 +49,24 @@ impl Tab {
 #[derive(Clone, State)]
 pub struct AppState {
     pub current_tab: Tab,
+    pub config: json::JsonValue,
     pub sql_query: String,
+    pub user: String,
 }
 
 impl Default for AppState {
     fn default() -> Self {
+        let config = json::parse(&get_config_defaults()).unwrap();
+        let users = config["credentials"].members().collect::<Vec<_>>();
+        let mut user = String::new();
+        if !users.is_empty() {
+           user = users[0]["name"].to_string();
+        }
         AppState {
             current_tab: Tab::default(),
+            config,
             sql_query: String::from("select * from test;"),
+            user,
         }
     }
 }
@@ -73,9 +81,9 @@ fn get_config_base_path() -> String {
     }
 }
 fn get_config_path() -> String {
-    format!("{}/config.jsonc", get_config_base_path())
+    format!("{}/config.jsonc", get_config_base_path()
+    )
 }
-
 fn get_config_defaults() -> String {
     r#"{
   "$schema": "https://raw.githubusercontent.com/comboomPunkTsucht/simplesql/main/src/simplesql_config.json",
@@ -99,7 +107,6 @@ fn get_config_defaults() -> String {
       "port": 5432
     }
   ],
-  //test
   "credentials": [
     {
       "name": "mysql_default",
@@ -123,7 +130,6 @@ pub fn check_and_gen_config() -> std::io::Result<()> {
     // 1. Check and create config directory if it doesn't exist
     let config_base_path = get_config_base_path();
     create_dir_all(&config_base_path)?;
-
     // 2. Check and create credential file if it doesn't exist
     let config_path = get_config_path();
     if !std::path::Path::new(&config_path).exists() {
@@ -134,10 +140,13 @@ pub fn check_and_gen_config() -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn get_config_content() -> std::io::Result<String> {
+pub fn get_config_content(state: &mut AppState) -> std::io::Result<String> {
     let mut f = File::open(get_config_path())?;
     let mut buffer = String::new();
     f.read_to_string(&mut buffer)?;
+
+    state.config = json::parse(&buffer).unwrap();
+    //println!("{}", json::stringify_pretty(state.config.clone(), 2));
     Ok(buffer)
 }
 
@@ -203,5 +212,3 @@ impl NordColor {
         Box::leak(self.to_string().into_boxed_str())
     }
 }
-
-

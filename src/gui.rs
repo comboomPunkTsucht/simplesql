@@ -1,18 +1,13 @@
-// Copyright (c) 2025 mcpeaps_HD
-//
-// This software is released under the MIT License.
-// https://opensource.org/licenses/MIT
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-use std::{collections::BTreeSet, fmt::format};
+// Updated version: Switch from egui_tiles to egui_dock
 
-// hide console window on Windows in release
-#[allow(unused_imports)]
-use crate::shared;
-use eframe::{Frame, egui};
-use egui::{Color32, frame};
+use std::collections::BTreeSet;
+use eframe::egui::{self, Color32};
+use egui::Ui;
 use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
-use egui_logger;
-use egui_tiles::{Tile, TileId, Tiles};
+use egui_dock::{DockArea, NodeIndex, Style, Tree, DockState, TabViewer};
+use egui_file::State;
+use crate::shared;
+use crate::shared::AppState;
 
 #[allow(dead_code)]
 impl shared::NordColor {
@@ -20,7 +15,6 @@ impl shared::NordColor {
         Color32::from_hex(self.as_str()).unwrap()
     }
 }
-
 
 #[allow(dead_code)]
 fn nord_color_theme() -> ColorTheme {
@@ -46,127 +40,92 @@ fn nord_color_theme() -> ColorTheme {
 fn jsonc_lang() -> Syntax {
     Syntax::new("jsonc")
         .with_comment("//")
-        .with_comment_multiline(["/*","*/"])
-        .with_types(BTreeSet::from(["string", "integer", "float", "boolean", "object","array"]))
+        .with_comment_multiline(["/*", "*/"])
+        .with_types(BTreeSet::from([
+            "string", "integer", "float", "boolean", "object", "array",
+        ]))
 }
-struct TreeBehavior {}
 
-impl egui_tiles::Behavior<shared::AppState> for TreeBehavior {
-    fn tab_title_for_pane(&mut self, pane: &shared::AppState) -> egui::WidgetText {
-        let label: &'static str;
-        match pane.current_tab {
-            shared::Tab::SqlEditor => label = "SQL Editor",
-            shared::Tab::TableView => label = "Table View",
-            shared::Tab::ConfigEditor => label = "Config Editor",
-            shared::Tab::RunLog => label = "Run and Log",
+struct MyTabViewer {
+    app_state: shared::AppState
+}
+
+impl MyTabViewer {
+    pub fn new( state: shared::AppState) -> MyTabViewer {
+        MyTabViewer {
+            app_state: state
         }
-        format!("{}", label).into()
     }
+}
 
-    fn pane_ui(
-        &mut self,
-        ui: &mut egui::Ui,
-        _tile_id: egui_tiles::TileId,
-        pane: &mut shared::AppState,
-    ) -> egui_tiles::UiResponse {
-        // Give each pane a unique color:
+impl TabViewer for MyTabViewer {
+    type Tab = shared::Tab;
+
+    fn ui(&mut self, ui: &mut egui::Ui, tab: &mut Self::Tab) {
         let background_color = shared::NordColor::Nord0.to_color32();
-        ui.painter()
-            .rect_filled(ui.max_rect(), 0.0, background_color);
-        ui.label(
-            self.tab_title_for_pane(pane)
-                .color(shared::NordColor::Nord6.to_color32()),
-        );
-        match pane.current_tab {
+        ui.painter().rect_filled(ui.max_rect(), 0.0, background_color);
+
+        match tab {
             shared::Tab::SqlEditor => {
+                ui.label("SQL Editor");
+                
                 CodeEditor::default()
-                    .id_source("code editor")
+                    .id_source("sql_editor")
                     .with_rows(12)
                     .with_fontsize(14.0)
-                    .with_theme(nord_color_theme()) //(nord_color_thme())
+                    .with_theme(nord_color_theme())
                     .with_syntax(Syntax::sql())
                     .with_numlines(true)
-                    .show(ui, &mut pane.sql_query);
+                    .show(ui, &mut self.app_state.sql_query);
             }
-            shared::Tab::TableView => {}
+            shared::Tab::TableView => {
+                ui.label("Table View");
+            }
             shared::Tab::ConfigEditor => {
-                let mut config: String =
-                    shared::get_config_content().expect("Failed to load config");
+                ui.label("Config Editor");
+                let mut config: String = shared::get_config_content(&mut self.app_state).expect("Failed to load config");
                 CodeEditor::default()
-                    .id_source("code editor")
+                    .id_source("config_editor")
                     .with_rows(12)
                     .with_fontsize(14.0)
-                    .with_theme(nord_color_theme()) //(nord_color_thme())
+                    .with_theme(nord_color_theme())
                     .with_syntax(jsonc_lang())
                     .with_numlines(true)
                     .show(ui, &mut config);
                 shared::set_config_content(config).expect("Failed to save connections");
             }
-            shared::Tab::RunLog => {
-                egui_logger::logger_ui().show(ui);
-            }
         }
+    }
 
-        // You can make your pane draggable like so:
-        if ui.response().drag_started() {
-            egui_tiles::UiResponse::DragStarted
-        } else {
-            egui_tiles::UiResponse::None
+    fn title(&mut self, tab: &mut Self::Tab) -> egui::WidgetText {
+        match tab {
+            shared::Tab::SqlEditor => "SQL Editor".into(),
+            shared::Tab::TableView => "Table View".into(),
+            shared::Tab::ConfigEditor => "Config Editor".into(),
         }
     }
 }
 
 pub fn main_gui() -> Result<(), eframe::Error> {
-    //env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
         ..Default::default()
     };
 
-    let mut tree = create_tree();
+    let mut dock_state = DockState::new(vec![
+        shared::Tab::SqlEditor,
+        shared::Tab::TableView,
+        shared::Tab::ConfigEditor,
+    ]);
+
+    let mut tab_viewer = MyTabViewer::new(shared::AppState::default());
 
     eframe::run_simple_native("simplesql", options, move |ctx, _frame| {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let mut behavior = TreeBehavior {};
-            tree.ui(&mut behavior, ui);
+            DockArea::new(&mut dock_state)
+                .style(Style::from_egui(ui.style().as_ref()))
+                .show_inside(ui, &mut tab_viewer);
         });
     })
-}
-
-fn create_tree() -> egui_tiles::Tree<shared::AppState> {
-    let mut next_view_nr: shared::Tab = shared::Tab::SqlEditor;
-    let mut gen_pane = || {
-        let pane = shared::AppState {
-            current_tab: next_view_nr,
-            ..Default::default()
-        };
-        match next_view_nr {
-            shared::Tab::SqlEditor => {
-                next_view_nr = shared::Tab::TableView;
-            }
-            shared::Tab::TableView => {
-                next_view_nr = shared::Tab::ConfigEditor;
-            }
-            shared::Tab::ConfigEditor => {
-                next_view_nr = shared::Tab::RunLog;
-            }
-            _ => {
-                next_view_nr = shared::Tab::SqlEditor;
-            }
-        }
-        pane
-    };
-
-    let mut tiles = egui_tiles::Tiles::default();
-
-    let mut tabs = vec![];
-    tabs.push(tiles.insert_pane(gen_pane()));
-    tabs.push(tiles.insert_pane(gen_pane()));
-    tabs.push(tiles.insert_pane(gen_pane()));
-    tabs.push(tiles.insert_pane(gen_pane()));
-
-    let root = tiles.insert_tab_tile(tabs);
-
-    egui_tiles::Tree::new("my_tree", root, tiles)
-}
+} 

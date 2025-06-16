@@ -8,10 +8,10 @@ use std::{
     fs::{File, create_dir_all},
     io::{Read, Write},
 };
+use std::time::SystemTime;
+use log::{debug, error, info, trace, warn};
 use widgetui::{states, State};
 use json;
-
-use egui::TextBuffer;
 
 #[derive(Clone, Copy)]
 pub enum Tab {
@@ -84,6 +84,23 @@ fn get_config_path() -> String {
     format!("{}/config.jsonc", get_config_base_path()
     )
 }
+
+fn get_log_path() -> String {
+    format!("{}/output.log", get_config_base_path())
+}
+
+pub fn setup_logger() -> Result<(), fern::InitError> {
+    fern::Dispatch::new()
+      .format(|out, message, record| {
+          out.finish(format_args!(
+              "[{}],[{}]-{} - {}",record.level(), record.target(), humantime::format_rfc3339_seconds(SystemTime::now()),message))
+      })
+      .level(log::LevelFilter::Info)
+      .chain(std::io::stdout())
+      .chain(fern::log_file(get_log_path())?)
+      .apply()?;
+    Ok(())
+}
 fn get_config_defaults() -> String {
     r#"{
   "$schema": "https://raw.githubusercontent.com/comboomPunkTsucht/simplesql/main/src/simplesql_config.json",
@@ -130,6 +147,7 @@ pub fn check_and_gen_config() -> std::io::Result<()> {
     // 1. Check and create config directory if it doesn't exist
     let config_base_path = get_config_base_path();
     create_dir_all(&config_base_path)?;
+    gen_log_file()?;
     // 2. Check and create credential file if it doesn't exist
     let config_path = get_config_path();
     if !std::path::Path::new(&config_path).exists() {
@@ -153,6 +171,11 @@ pub fn get_config_content(state: &mut AppState) -> std::io::Result<String> {
 pub fn set_config_content(buffer: String) -> std::io::Result<()> {
     let mut f = File::create(get_config_path())?;
     f.write_all(buffer.as_bytes())?;
+    Ok(())
+}
+pub fn gen_log_file() -> std::io::Result<()> {
+    let mut f = File::create(get_log_path())?;
+    f.write_all(String::new().as_bytes())?;
     Ok(())
 }
 
@@ -212,3 +235,19 @@ impl NordColor {
         Box::leak(self.to_string().into_boxed_str())
     }
 }
+pub const NORDCOLOR_NORD0: NordColor = NordColor::Nord0;
+pub const NORDCOLOR_NORD1: NordColor = NordColor::Nord1;
+pub const NORDCOLOR_NORD2: NordColor = NordColor::Nord2;
+pub const NORDCOLOR_NORD3: NordColor = NordColor::Nord3;
+pub const NORDCOLOR_NORD4: NordColor = NordColor::Nord4;
+pub const NORDCOLOR_NORD5: NordColor = NordColor::Nord5;
+pub const NORDCOLOR_NORD6: NordColor = NordColor::Nord6;
+pub const NORDCOLOR_NORD7: NordColor = NordColor::Nord7;
+pub const NORDCOLOR_NORD8: NordColor = NordColor::Nord8;
+pub const NORDCOLOR_NORD9: NordColor = NordColor::Nord9;
+pub const NORDCOLOR_NORD10: NordColor = NordColor::Nord10;
+pub const NORDCOLOR_NORD11: NordColor = NordColor::Nord11;
+pub const NORDCOLOR_NORD12: NordColor = NordColor::Nord12;
+pub const NORDCOLOR_NORD13: NordColor = NordColor::Nord13;
+pub const NORDCOLOR_NORD14: NordColor = NordColor::Nord14;
+pub const NORDCOLOR_NORD15: NordColor = NordColor::Nord15;

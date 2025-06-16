@@ -58,6 +58,7 @@
 use clap::{Arg, Command};
 #[allow(unused_imports)]
 use std::io::Write;
+
 #[allow(unused_imports)]
 mod gui;
 #[allow(unused_imports)]
@@ -65,6 +66,7 @@ mod shared;
 #[allow(unused_imports)]
 mod tui;
 
+use log::{debug, error, info, trace, warn};
 fn get_git_hash() -> String {
     use std::process::Command;
 
@@ -73,10 +75,12 @@ fn get_git_hash() -> String {
         .output()
         .unwrap();
     let git_hash = String::from_utf8(output.stdout).unwrap();
+    info!("found GIT HASH: {git_hash}");
     git_hash
 }
 
 fn main() {
+    shared::setup_logger().unwrap();
     // Set up the CLI application using Clap and congigs
     let version_string = format!(
         "v{}, Git-HEAD: {}",
@@ -89,36 +93,36 @@ fn main() {
     let authors = env!("CARGO_PKG_AUTHORS");
 
     let matches = Command::new(name)
-        .version(version)
-        .author(authors)
-        .about(description)
-        .arg(
-            Arg::new("gui")
-                .long("gui")
-                .short('g')
-                .global(true)
-                .default_value("false")
-                .conflicts_with("tui")
-                .action(clap::ArgAction::SetTrue)
-                .long_help("When Flag is set the programm runs in the non default Graphical User Interface Mode")
-                .help("If set the program runs in gui mode"),
-        )
-        .arg(
-            Arg::new("tui")
-                .long("tui")
-                .short('t')
-                .alias("cli")
-                .short_alias('c')
-                .visible_alias("cli")
-                .visible_short_alias('c')
-                .global(true)
-                .default_value("true")
-                .conflicts_with("gui")
-                .action(clap::ArgAction::SetTrue)
-                .long_help("When Flag is set the programm runs in the default Terminal User Interface Mode")
-                .help("If set the programm runs in tui mode [default]"),
-        )
-        .get_matches();
+    .version(version)
+    .author(authors)
+    .about(description)
+    .arg(
+      Arg::new("gui")
+        .long("gui")
+        .short('g')
+        .global(true)
+        .default_value("false")
+        .conflicts_with("tui")
+        .action(clap::ArgAction::SetTrue)
+        .long_help("When Flag is set the programm runs in the non default Graphical User Interface Mode")
+        .help("If set the program runs in gui mode"),
+    )
+    .arg(
+      Arg::new("tui")
+        .long("tui")
+        .short('t')
+        .alias("cli")
+        .short_alias('c')
+        .visible_alias("cli")
+        .visible_short_alias('c')
+        .global(true)
+        .default_value("true")
+        .conflicts_with("gui")
+        .action(clap::ArgAction::SetTrue)
+        .long_help("When Flag is set the programm runs in the default Terminal User Interface Mode")
+        .help("If set the programm runs in tui mode [default]"),
+    )
+    .get_matches();
 
     if let Err(e) = shared::check_and_gen_config() {
         eprintln!("Error generating config: {}", e);
@@ -126,17 +130,22 @@ fn main() {
     }
     if matches.get_flag("gui") {
         // GUI mode
+        unsafe {
+            std::env::set_var("SLINT_BACKEND", "winit-skia");
+        }
+        info!("GUI Mode activated");
         if let Err(e) = gui::main_gui() {
-            eprintln!("Error: {}", e);
+            error!("{e}");
             std::process::exit(1);
         }
     } else if matches.get_flag("tui") {
         // CLI mode
+        info!("TUI Mode activated");
         if let Err(e) = tui::main_tui() {
-            eprintln!("Error: {}", e);
+            error!("{e}");
             std::process::exit(1);
         }
     } else {
-        println!("try --help for more information");
+        error!("try --help for more information");
     }
 }

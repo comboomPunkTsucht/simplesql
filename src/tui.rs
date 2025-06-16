@@ -19,7 +19,7 @@ use widgetui::{
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode},
     *,
 };
-
+use log::{debug, error, info, trace, warn};
 use crate::shared;
 
 #[allow(dead_code)]
@@ -149,7 +149,7 @@ fn widget(
             state.shared.user = users[next_idx]["name"].to_string();
         }
 } else if events.key(KeyCode::F(5)) {
-        //println!("test")
+        debug!("test")
     }
 
     Ok(())

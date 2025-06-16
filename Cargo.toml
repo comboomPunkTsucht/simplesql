@@ -9,15 +9,15 @@ readme = "README.md"
 
 [package.metadata.build-targets]
 default = [
-  "aarch64-apple-darwin",
-  "aarch64-pc-windows-msvc",
-  "aarch64-unknown-linux-gnu",
-  "aarch64-unknown-linux-musl",
-  "x86_64-apple-darwin",
-  "x86_64-pc-windows-msvc",
-  "x86_64-unknown-freebsd",
-  "x86_64-unknown-linux-gnu",
-  "x86_64-unknown-linux-musl"
+    "aarch64-apple-darwin",
+    "aarch64-pc-windows-msvc",
+    "aarch64-unknown-linux-gnu",
+    "aarch64-unknown-linux-musl",
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+    "x86_64-unknown-freebsd",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl"
 ]
 
 [target.'cfg(target_os = "windows")'.dependencies]
@@ -38,12 +38,10 @@ edtui = "*"
 # main.rs
 clap = "*"
 # gui.rs
-egui = {features = ["accesskit", "color-hex"], version = "*"}
-# image = { version = "0.25", features = ["jpeg", "png", "webp"] } # Add the types you want support for
-eframe = "*"
-egui_dock = "*"
-egui_code_editor = "*"
-egui_file = "*"
+slint = { version = "*", features = ["backend-winit", "accessibility", "renderer-skia", "renderer-winit-skia", "document-features"] }
 # shared.rs
-sqlx = { version = "*", features = [ "runtime-tokio", "tls-rustls-ring-native-roots", "postgres", "mysql", "any", "derive", "macros" ] }
+sqlx = { version = "*", features = ["runtime-tokio", "tls-rustls-ring-native-roots", "postgres", "mysql", "any", "derive", "macros"] }
 json = "*"
+log = "*"
+fern = "*"
+humantime = "*"

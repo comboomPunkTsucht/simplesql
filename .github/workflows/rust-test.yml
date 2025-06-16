@@ -22,7 +22,7 @@ jobs:
           check-latest: true
           update-environment: true
       - name: Add Python to PATH manually (Unix)
-        run: echo "${{ steps.setup-python.outputs.python-path }}" >> $GITHUB_PATH
+        run: echo $Python_ROOT_DIR >> $GITHUB_PATH
 
       - name: Setup Rust Targets
         run: rustup target add aarch64-apple-darwin aarch64-unknown-linux-gnu aarch64-unknown-linux-musl aarch64-pc-windows-msvc x86_64-apple-darwin x86_64-pc-windows-msvc x86_64-unknown-freebsd x86_64-unknown-linux-gnu x86_64-unknown-linux-musl

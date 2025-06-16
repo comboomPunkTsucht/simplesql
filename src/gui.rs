@@ -1,10 +1,10 @@
 use crate::shared;
 use crate::shared::{AppState, NordColor, NORDCOLOR_NORD0, NORDCOLOR_NORD14};
-use slint;
 use log::{debug, error, info, trace, warn};
+use slint;
 use std::time::SystemTime;
 
-slint::slint!{
+slint::slint! {
   import { TabWidget } from "std-widgets.slint";
   global Colors {
     // Polar Night
@@ -104,30 +104,29 @@ slint::slint!{
 }
 
 impl NordColor {
-  pub fn to_color(&self) -> slint::Color {
-    let value = self.value();
-    let r = ((value >> 24) & 0xFF) as u8;
-    let g = ((value >> 16) & 0xFF) as u8;
-    let b = ((value >> 8) & 0xFF) as u8;
-    let a = (value & 0xFF) as u8;
-    slint::Color::from_argb_u8(a, r, g, b)
-  }
+    #[allow(dead_code)]
+    pub fn to_color(&self) -> slint::Color {
+        let value = self.value();
+        let r = ((value >> 24) & 0xFF) as u8;
+        let g = ((value >> 16) & 0xFF) as u8;
+        let b = ((value >> 8) & 0xFF) as u8;
+        let a = (value & 0xFF) as u8;
+        slint::Color::from_argb_u8(a, r, g, b)
+    }
 }
 
-
-
 pub fn main_gui() -> Result<(), Box<dyn std::error::Error>> {
-  let gui = SimplesqlGUI::new().unwrap();
-  gui.on_file_new(file_new);
-  gui.on_file_open(file_open);
-  gui.run().unwrap();
-  Ok(())
+    let gui = SimplesqlGUI::new().unwrap();
+    gui.on_file_new(file_new);
+    gui.on_file_open(file_open);
+    gui.run().unwrap();
+    Ok(())
 }
 
 fn file_new() {
-  log::info!("new");
+    log::info!("new");
 }
 
 fn file_open() {
-  log::info!("open");
+    log::info!("open");
 }

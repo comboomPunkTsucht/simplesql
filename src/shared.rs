@@ -3,15 +3,13 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+use json;
+use std::time::SystemTime;
 use std::{
-    fmt::format,
-    fs::{File, create_dir_all},
+    fs::{create_dir_all, File},
     io::{Read, Write},
 };
-use std::time::SystemTime;
-use log::{debug, error, info, trace, warn};
-use widgetui::{states, State};
-use json;
+use widgetui::State;
 
 #[derive(Clone, Copy)]
 pub enum Tab {
@@ -60,7 +58,7 @@ impl Default for AppState {
         let users = config["credentials"].members().collect::<Vec<_>>();
         let mut user = String::new();
         if !users.is_empty() {
-           user = users[0]["name"].to_string();
+            user = users[0]["name"].to_string();
         }
         AppState {
             current_tab: Tab::default(),
@@ -81,8 +79,7 @@ fn get_config_base_path() -> String {
     }
 }
 fn get_config_path() -> String {
-    format!("{}/config.jsonc", get_config_base_path()
-    )
+    format!("{}/config.jsonc", get_config_base_path())
 }
 
 fn get_log_path() -> String {
@@ -91,14 +88,19 @@ fn get_log_path() -> String {
 
 pub fn setup_logger() -> Result<(), fern::InitError> {
     fern::Dispatch::new()
-      .format(|out, message, record| {
-          out.finish(format_args!(
-              "[{}],[{}]-{} - {}",record.level(), record.target(), humantime::format_rfc3339_seconds(SystemTime::now()),message))
-      })
-      .level(log::LevelFilter::Info)
-      .chain(std::io::stdout())
-      .chain(fern::log_file(get_log_path())?)
-      .apply()?;
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "[{}],[{}]-{} - {}",
+                record.level(),
+                record.target(),
+                humantime::format_rfc3339_seconds(SystemTime::now()),
+                message
+            ))
+        })
+        .level(log::LevelFilter::Info)
+        .chain(std::io::stdout())
+        .chain(fern::log_file(get_log_path())?)
+        .apply()?;
     Ok(())
 }
 fn get_config_defaults() -> String {
@@ -235,19 +237,35 @@ impl NordColor {
         Box::leak(self.to_string().into_boxed_str())
     }
 }
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD0: NordColor = NordColor::Nord0;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD1: NordColor = NordColor::Nord1;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD2: NordColor = NordColor::Nord2;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD3: NordColor = NordColor::Nord3;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD4: NordColor = NordColor::Nord4;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD5: NordColor = NordColor::Nord5;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD6: NordColor = NordColor::Nord6;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD7: NordColor = NordColor::Nord7;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD8: NordColor = NordColor::Nord8;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD9: NordColor = NordColor::Nord9;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD10: NordColor = NordColor::Nord10;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD11: NordColor = NordColor::Nord11;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD12: NordColor = NordColor::Nord12;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD13: NordColor = NordColor::Nord13;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD14: NordColor = NordColor::Nord14;
+#[allow(dead_code)]
 pub const NORDCOLOR_NORD15: NordColor = NordColor::Nord15;

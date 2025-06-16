@@ -1,7 +1,12 @@
+#[allow(unused_imports)]
 use crate::shared;
+#[allow(unused_imports)]
 use crate::shared::{AppState, NordColor, NORDCOLOR_NORD0, NORDCOLOR_NORD14};
+#[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
+#[allow(unused_imports)]
 use slint;
+#[allow(unused_imports)]
 use std::time::SystemTime;
 
 slint::slint! {

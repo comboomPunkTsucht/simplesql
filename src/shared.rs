@@ -2,13 +2,16 @@
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
-
+#[allow(unused_imports)]
 use json;
+#[allow(unused_imports)]
 use std::time::SystemTime;
+#[allow(unused_imports)]
 use std::{
     fs::{create_dir_all, File},
     io::{Read, Write},
 };
+#[allow(unused_imports)]
 use widgetui::State;
 
 #[derive(Clone, Copy)]

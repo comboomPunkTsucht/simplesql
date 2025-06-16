@@ -2,25 +2,30 @@
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
-
+#[allow(unused_imports)]
+use crate::shared;
+#[allow(unused_imports)]
 use edtui::{
-    EditorEventHandler, EditorState, EditorStatusLine, EditorTheme, EditorView, Lines,
+    syntect::parsing::{Scope, SyntaxReference}, EditorEventHandler, EditorState, EditorStatusLine, EditorTheme, EditorView,
+    Lines,
     SyntaxHighlighter,
-    syntect::parsing::{Scope, SyntaxReference},
 };
+#[allow(unused_imports)]
+use log::{debug, error, info, trace, warn};
+#[allow(unused_imports)]
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::*,
     style::{Color, Style},
     widgets::*,
 };
+#[allow(unused_imports)]
 use std::error::Error;
+#[allow(unused_imports)]
 use widgetui::{
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode},
     *,
 };
-use log::{debug, error, info, trace, warn};
-use crate::shared;
 
 #[allow(dead_code)]
 #[derive(Clone, State)]
@@ -142,13 +147,18 @@ fn widget(
     } else if events.key(KeyCode::F(3)) {
         state.shared.current_tab = shared::Tab::ConfigEditor;
     } else if events.key(KeyCode::F(4)) {
-        let users = state.shared.config["credentials"].members().collect::<Vec<_>>();
+        let users = state.shared.config["credentials"]
+            .members()
+            .collect::<Vec<_>>();
         if !users.is_empty() {
-            let current_idx = users.iter().position(|u| u.to_string() == state.shared.user).unwrap_or(0);
+            let current_idx = users
+                .iter()
+                .position(|u| u.to_string() == state.shared.user)
+                .unwrap_or(0);
             let next_idx = (current_idx + 1) % users.len();
             state.shared.user = users[next_idx]["name"].to_string();
         }
-} else if events.key(KeyCode::F(5)) {
+    } else if events.key(KeyCode::F(5)) {
         debug!("test")
     }
 

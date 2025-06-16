@@ -65,7 +65,7 @@ mod gui;
 mod shared;
 #[allow(unused_imports)]
 mod tui;
-
+#[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
 fn get_git_hash() -> String {
     use std::process::Command;

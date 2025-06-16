@@ -108,7 +108,7 @@ jobs:
             os: windows-latest
             os-name: windows
             arch: aarch64
-            pyarch: arm64
+            pyarch: x64
 
             # macOS targets
           - target: x86_64-apple-darwin

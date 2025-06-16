@@ -1,6 +1,6 @@
 [package]
 name = "simplesql"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 description = "SQL made simple — in your terminal or with a GUI."
 license = "MIT"

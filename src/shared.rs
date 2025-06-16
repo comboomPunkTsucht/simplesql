@@ -281,6 +281,16 @@ pub const NORDCOLOR_NORD15: NordColor = NordColor::Nord15;
 // tests
 
 #[allow(dead_code)]
+fn load_user_config() -> String {
+    let mut state = AppState::default();
+    get_config_content(&mut state).unwrap_or(get_config_defaults())
+}
+
+fn save_user_config(config: String) {
+    set_config_content(config).unwrap();
+}
+
+#[allow(dead_code)]
 fn cleanup() {
     let base = get_config_base_path();
     let _ = fs::remove_dir_all(&base);
@@ -288,29 +298,37 @@ fn cleanup() {
 
 #[test]
 fn test_check_and_gen_config_creates_files() {
+    let user_config = load_user_config();
     cleanup();
     assert!(check_and_gen_config().is_ok());
     assert!(Path::new(&get_config_path()).exists());
     assert!(Path::new(&get_log_path()).exists());
+    save_user_config(user_config);
 }
 
 #[test]
 fn test_get_and_set_config_content() {
+    let user_config = load_user_config();
     cleanup();
     check_and_gen_config().unwrap();
     let mut state = AppState::default();
     let original = get_config_content(&mut state).unwrap();
     let new_content = original.replace("Local mariaDB", "Test mariaDB");
     assert!(set_config_content(new_content.clone()).is_ok());
-    let mut state2 = AppState::default();
-    let read_back = get_config_content(&mut state2).unwrap();
+    let read_back = get_config_content(&mut state).unwrap();
     assert!(read_back.contains("Test mariaDB"));
-    // Rücksetzen
-    set_config_content(original).unwrap();
+    // Rücksetzen nur, wenn das Original gültiges JSON ist
+    if json::parse(&original).is_ok() {
+        set_config_content(original).unwrap();
+    } else {
+        panic!("Original-Konfiguration ist ungültig und kann nicht zurückgesetzt werden!");
+    }
+    save_user_config(user_config);
 }
 
 #[test]
 fn test_gen_log_file_overwrites() {
+    let user_config = load_user_config();
     cleanup();
     check_and_gen_config().unwrap();
     let log_path = get_log_path();
@@ -318,16 +336,19 @@ fn test_gen_log_file_overwrites() {
     assert!(gen_log_file().is_ok());
     let content = fs::read_to_string(&log_path).unwrap();
     assert!(content.is_empty());
+    save_user_config(user_config);
 }
 
 #[test]
 fn test_app_state_default_user() {
+    let user_config = load_user_config();
     cleanup();
     check_and_gen_config().unwrap();
     let state = AppState::default();
     assert!(!state.user.is_empty());
     assert_eq!(state.current_tab.to_index(), 0);
     assert!(state.sql_query.contains("select"));
+    save_user_config(user_config);
 }
 
 #[test]

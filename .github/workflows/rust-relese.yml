@@ -87,16 +87,16 @@ jobs:
             os-name: linux
             arch: x86_64
             pyarch: x64
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            os-name: linux
-            arch: aarch64
-            pyarch: arm64
-          - target: aarch64-unknown-linux-musl
-            os: ubuntu-latest
-            os-name: linux
-            arch: aarch64
-            pyarch: arm64
+            #- target: aarch64-unknown-linux-gnu
+            #  os: ubuntu-latest
+            #  os-name: linux
+            #  arch: aarch64
+            #  pyarch: arm64
+            #- target: aarch64-unknown-linux-musl
+            #  os: ubuntu-latest
+            #  os-name: linux
+            #  arch: aarch64
+            #  pyarch: arm64
 
             # Windows targets
           - target: x86_64-pc-windows-msvc
@@ -104,11 +104,11 @@ jobs:
             os-name: windows
             arch: x86_64
             pyarch: x64
-          - target: aarch64-pc-windows-msvc
-            os: windows-latest
-            os-name: windows
-            arch: aarch64
-            pyarch: x64
+            #- target: aarch64-pc-windows-msvc
+            #  os: windows-latest
+            #  os-name: windows
+            #  arch: aarch64
+            #  pyarch: x64
 
             # macOS targets
           - target: x86_64-apple-darwin

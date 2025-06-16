@@ -110,15 +110,15 @@ fn widget(
 
     // Render help bar
     let help_text = Paragraph::new(
-        format!("F1: SQL Editor | F2: Table View | F3: Config Editor | F4: Selected User: {} | F5: Run the SQL Statement | F12: Quit", state.shared.user),
-    )
-    .style(Style::default().fg(Color::Gray).bg(Color::Black))
-    .block(
-        Block::default()
-            .title("Help")
-            .borders(Borders::ALL)
-            .border_type(BorderType::Thick),
-    );
+            format!("F1: SQL Editor | F2: Table View | F3: Config Editor | F4: Selected User: {} | F5: Run the SQL Statement | F12: Quit", state.shared.user),
+        )
+          .style(Style::default().fg(Color::Gray).bg(Color::Black))
+          .block(
+              Block::default()
+                .title("Help")
+                .borders(Borders::ALL)
+                .border_type(BorderType::Thick),
+          );
     frame.render_widget(help_text, chunks[2]);
 
     // Handle editor events

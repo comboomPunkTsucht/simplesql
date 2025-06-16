@@ -2,19 +2,21 @@
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
-#[allow(unused_imports)]
+#[cfg(test)]
 use json;
+use std::path::Path;
 #[allow(unused_imports)]
 use std::time::SystemTime;
 #[allow(unused_imports)]
 use std::{
-    fs::{create_dir_all, File},
+    fs,
+    fs::{create_dir_all, remove_dir_all, remove_file, File},
     io::{Read, Write},
 };
 #[allow(unused_imports)]
 use widgetui::State;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Tab {
     SqlEditor,
     TableView,
@@ -76,13 +78,15 @@ impl AppState {}
 
 fn get_config_base_path() -> String {
     match std::env::consts::OS {
-        "linux" | "macos" | "freebsd" => format!("{}/.simplesql", std::env::var("HOME").unwrap()),
+        "linux" | "macos" | "freebsd" => {
+            format!("{}/.simplesql", std::env::var("HOME").unwrap())
+        }
         "windows" => format!("{}/.simplesql", std::env::var("APPDATA").unwrap()),
         _ => panic!("Unsupported platform"),
     }
 }
 fn get_config_path() -> String {
-    format!("{}/config.jsonc", get_config_base_path())
+    format!("{}/config.json", get_config_base_path())
 }
 
 fn get_log_path() -> String {
@@ -100,7 +104,7 @@ pub fn setup_logger() -> Result<(), fern::InitError> {
                 message
             ))
         })
-        .level(log::LevelFilter::Info)
+        .level(log::LevelFilter::Trace)
         .chain(std::io::stdout())
         .chain(fern::log_file(get_log_path())?)
         .apply()?;
@@ -145,7 +149,7 @@ fn get_config_defaults() -> String {
   ]
 }
 "#
-    .to_string()
+          .to_string()
 }
 
 pub fn check_and_gen_config() -> std::io::Result<()> {
@@ -185,6 +189,7 @@ pub fn gen_log_file() -> std::io::Result<()> {
 }
 
 #[allow(dead_code)]
+#[derive(PartialEq, Debug)]
 pub enum NordColor {
     // Polar Night
     Nord0 = 0x2e3440ff,
@@ -272,3 +277,73 @@ pub const NORDCOLOR_NORD13: NordColor = NordColor::Nord13;
 pub const NORDCOLOR_NORD14: NordColor = NordColor::Nord14;
 #[allow(dead_code)]
 pub const NORDCOLOR_NORD15: NordColor = NordColor::Nord15;
+
+// tests
+
+#[allow(dead_code)]
+fn cleanup() {
+    let base = get_config_base_path();
+    let _ = fs::remove_dir_all(&base);
+}
+
+#[test]
+fn test_check_and_gen_config_creates_files() {
+    cleanup();
+    assert!(check_and_gen_config().is_ok());
+    assert!(Path::new(&get_config_path()).exists());
+    assert!(Path::new(&get_log_path()).exists());
+}
+
+#[test]
+fn test_get_and_set_config_content() {
+    cleanup();
+    check_and_gen_config().unwrap();
+    let mut state = AppState::default();
+    let original = get_config_content(&mut state).unwrap();
+    let new_content = original.replace("Local mariaDB", "Test mariaDB");
+    assert!(set_config_content(new_content.clone()).is_ok());
+    let mut state2 = AppState::default();
+    let read_back = get_config_content(&mut state2).unwrap();
+    assert!(read_back.contains("Test mariaDB"));
+    // Rücksetzen
+    set_config_content(original).unwrap();
+}
+
+#[test]
+fn test_gen_log_file_overwrites() {
+    cleanup();
+    check_and_gen_config().unwrap();
+    let log_path = get_log_path();
+    fs::write(&log_path, "testlog").unwrap();
+    assert!(gen_log_file().is_ok());
+    let content = fs::read_to_string(&log_path).unwrap();
+    assert!(content.is_empty());
+}
+
+#[test]
+fn test_app_state_default_user() {
+    cleanup();
+    check_and_gen_config().unwrap();
+    let state = AppState::default();
+    assert!(!state.user.is_empty());
+    assert_eq!(state.current_tab.to_index(), 0);
+    assert!(state.sql_query.contains("select"));
+}
+
+#[test]
+fn test_tab_index_conversion() {
+    assert_eq!(Tab::from_index(0), Tab::SqlEditor);
+    assert_eq!(Tab::from_index(1), Tab::TableView);
+    assert_eq!(Tab::from_index(2), Tab::ConfigEditor);
+    assert_eq!(Tab::SqlEditor.to_index(), 0);
+    assert_eq!(Tab::TableView.to_index(), 1);
+    assert_eq!(Tab::ConfigEditor.to_index(), 2);
+}
+
+#[test]
+fn test_nordcolor_value_and_string() {
+    let c = NordColor::Nord0;
+    assert_eq!(c.value(), 0x2e3440ff);
+    assert!(c.to_string().starts_with("#"));
+    assert!(c.as_str().starts_with("#"));
+}

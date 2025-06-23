@@ -13,6 +13,7 @@ use std::{
     fs::{create_dir_all, remove_dir_all, remove_file, File},
     io::{Read, Write},
 };
+use tui_logger::TuiLoggerFile;
 #[allow(unused_imports)]
 use widgetui::State;
 
@@ -21,6 +22,7 @@ pub enum Tab {
     SqlEditor,
     TableView,
     ConfigEditor,
+    LogViewer,
 }
 impl Default for Tab {
     fn default() -> Self {
@@ -35,6 +37,7 @@ impl Tab {
             0 => Tab::SqlEditor,
             1 => Tab::TableView,
             2 => Tab::ConfigEditor,
+            3 => Tab::LogViewer,
             _ => panic!("Invalid tab index"),
         }
     }
@@ -44,6 +47,7 @@ impl Tab {
             Tab::SqlEditor => 0,
             Tab::TableView => 1,
             Tab::ConfigEditor => 2,
+            Tab::LogViewer => 3,
         }
     }
 }
@@ -93,21 +97,28 @@ fn get_log_path() -> String {
     format!("{}/output.log", get_config_base_path())
 }
 
-pub fn setup_logger() -> Result<(), fern::InitError> {
-    fern::Dispatch::new()
-        .format(|out, message, record| {
-            out.finish(format_args!(
-                "[{}],[{}]-{} - {}",
-                record.level(),
-                record.target(),
-                humantime::format_rfc3339_seconds(SystemTime::now()),
-                message
-            ))
-        })
-        .level(log::LevelFilter::Trace)
-        .chain(std::io::stdout())
-        .chain(fern::log_file(get_log_path())?)
-        .apply()?;
+pub fn setup_logger(is_tui: bool) -> Result<(), fern::InitError> {
+    let log_level = log::LevelFilter::Trace;
+    if is_tui {
+        tui_logger::init_logger(log_level).unwrap();
+        tui_logger::set_default_level(log_level);
+        tui_logger::set_log_file(TuiLoggerFile::new(get_log_path().as_str()));
+    } else {
+        fern::Dispatch::new()
+            .format(|out, message, record| {
+                out.finish(format_args!(
+                    "[{}],[{}]-{} - {}",
+                    record.level(),
+                    record.target(),
+                    humantime::format_rfc3339_seconds(SystemTime::now()),
+                    message
+                ))
+            })
+            .level(log_level)
+            .chain(std::io::stdout())
+            .chain(fern::log_file(get_log_path())?)
+            .apply()?;
+    }
     Ok(())
 }
 fn get_config_defaults() -> String {
@@ -159,7 +170,7 @@ pub fn check_and_gen_config() -> std::io::Result<()> {
     gen_log_file()?;
     // 2. Check and create credential file if it doesn't exist
     let config_path = get_config_path();
-    if !std::path::Path::new(&config_path).exists() {
+    if !Path::new(&config_path).exists() {
         let mut file = File::create(&config_path)?;
         file.write_all(get_config_defaults().as_bytes())?;
     }
@@ -286,6 +297,7 @@ fn load_user_config() -> String {
     get_config_content(&mut state).unwrap_or(get_config_defaults())
 }
 
+#[allow(dead_code)]
 fn save_user_config(config: String) {
     set_config_content(config).unwrap();
 }
@@ -293,7 +305,7 @@ fn save_user_config(config: String) {
 #[allow(dead_code)]
 fn cleanup() {
     let base = get_config_base_path();
-    let _ = fs::remove_dir_all(&base);
+    let _ = remove_dir_all(&base);
 }
 
 #[test]

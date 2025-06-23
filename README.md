@@ -1,12 +1,12 @@
 <!-- cargo-rdme start -->
 
 # simplesql
-**simplesql** is a modern, lightweight SQL client that runs in either Terminal (TUI) or optional Graphical (GUI) mode. Built for developers, DBAs, and power users who need fast, intuitive access to their databases.
+**simplesql** is a modern, lightweight SQL client that runs in either optional Terminal (TUI) or Graphical (GUI) mode. Built for developers, DBAs, and power users who need fast, intuitive access to their databases.
 
 ## 🔧 Features
 
-- ⚡ Fast and responsive Terminal User Interface (TUI)
-- 🖼️ Optional Graphical User Interface (GUI) for a more visual experience
+- Optional ⚡ Fast and responsive Terminal User Interface (TUI)
+- 🖼️ Graphical User Interface (GUI) for a more visual experience [WIP]
 - 🛠️ Simple command-line controls
 - 🔁 Cross-platform support: Linux, macOS, Windows, FreeBSD
 
@@ -31,8 +31,8 @@ cargo build --release
 
 | Short | Long        | Description                                           |
 |-------|-------------|-------------------------------------------------------|
-| `-g`  | `--gui`     | Launch **simplesql** in graphical mode                |
-| `-t`, `-c` | `--tui`, `--cli`| Launch in terminal mode (default)                     |
+| `-g`  | `--gui`     | Launch **simplesql** in graphical mode (default)      |
+| `-t`, `-c` | `--tui`, `--cli`| Launch in terminal mode                      |
 | `-h`  | `--help`    | Show help message                                     |
 | `-V`  | `--version` | Show version info                                     |
 
@@ -41,6 +41,11 @@ cargo build --release
 ```bash
 ./simplesql --tui
 ```
+
+## Special Behavior
+The application will automatically detect if it is running in a terminal or not. If it is running in a terminal, it will default to TUI mode unless the `--gui` flag is set. If it is not running in a terminal, it will default to GUI mode.
+The Terminal might be appearing in the background, but it is only for logging in GUI Mode.
+The .app/.desktop/.link starts the Programm automatikly in GUI mode.
 
 ## 📄 Changelog
 

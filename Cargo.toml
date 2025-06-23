@@ -2,7 +2,7 @@
 name = "simplesql"
 version = "0.0.2"
 edition = "2024"
-description = "SQL made simple — in your terminal or with a GUI."
+description = "simplesql is a modern, lightweight SQL client that runs in either optional Terminal (TUI) or Graphical (GUI) mode. Built for developers, DBAs, and power users who need fast, intuitive access to their databases."
 license = "MIT"
 authors = ["mcpeaps_HD<mcpeaps_HD@comboompunktsucht.app>"]
 readme = "README.md"
@@ -35,6 +35,8 @@ ratatui = "*"
 widgetui = "*"
 crossterm = "*"
 edtui = "*"
+tui-logger = "*"
+chrono = "*"
 # main.rs
 clap = "*"
 # gui.rs
@@ -44,4 +46,5 @@ sqlx = { version = "*", features = ["runtime-tokio", "tls-rustls-ring-native-roo
 json = "*"
 log = "*"
 fern = "*"
+atty = "*"
 humantime = "*"

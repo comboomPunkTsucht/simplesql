@@ -21,6 +21,8 @@ use ratatui::{
 };
 #[allow(unused_imports)]
 use std::error::Error;
+use std::time::SystemTime;
+use tui_logger::{TuiLoggerLevelOutput, TuiLoggerSmartWidget, TuiLoggerWidget};
 #[allow(unused_imports)]
 use widgetui::{
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode},
@@ -74,17 +76,22 @@ fn widget(
     let jsonc_syntax_highlighter: SyntaxHighlighter = SyntaxHighlighter::new("nord", "json");
 
     // Create and render tabs
-    let tabs = Tabs::new(vec!["SQL Editor", "Table View", "Config Editor"])
-        .select(state.shared.current_tab.to_index())
-        .style(Style::default().bg(Color::Black).fg(Color::White))
-        .highlight_style(Style::default().bold().fg(Color::Black).bg(Color::White))
-        .divider("|")
-        .block(
-            Block::default()
-                .title("Tabs")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Thick),
-        );
+    let tabs = Tabs::new(vec![
+        "SQL Editor",
+        "Table View",
+        "Config Editor",
+        "Log Viewer",
+    ])
+    .select(state.shared.current_tab.to_index())
+    .style(Style::default().bg(Color::Black).fg(Color::White))
+    .highlight_style(Style::default().bold().fg(Color::Black).bg(Color::White))
+    .divider("|")
+    .block(
+        Block::default()
+            .title("Tabs")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Thick),
+    );
     frame.render_widget(tabs.clone(), chunks[0]);
     // Render main content based on selected tab
     match state.shared.current_tab {
@@ -106,11 +113,27 @@ fn widget(
                 .syntax_highlighter(Some(jsonc_syntax_highlighter)),
             chunks[1],
         ),
+        shared::Tab::LogViewer => frame.render_widget(
+            TuiLoggerWidget::default()
+                .output_separator('-')
+                .output_timestamp(Some("[%Y-%m-%d %H:%M:%S]".to_string()))
+                .output_level(Some(TuiLoggerLevelOutput::Long))
+                .output_line(true)
+                .output_target(true)
+                .block(
+                    Block::default()
+                        .border_type(BorderType::Thick)
+                        .title("Log Viewer")
+                        .borders(Borders::ALL),
+                )
+                .style(Style::default().fg(Color::Gray).bg(Color::Black)),
+            chunks[1],
+        ),
     }
 
     // Render help bar
     let help_text = Paragraph::new(
-            format!("F1: SQL Editor | F2: Table View | F3: Config Editor | F4: Selected User: {} | F5: Run the SQL Statement | F12: Quit", state.shared.user),
+            format!("F1: SQL Editor | F2: Table View | F3: Config Editor | F4: Select User | F5: Run | F10: Logs | F12: Quit"),
         )
           .style(Style::default().fg(Color::Gray).bg(Color::Black))
           .block(
@@ -142,30 +165,24 @@ fn widget(
         events.register_exit();
     } else if events.key(KeyCode::F(1)) {
         state.shared.current_tab = shared::Tab::SqlEditor;
+        log::debug!("Switched to SQL Editor tab");
     } else if events.key(KeyCode::F(2)) {
         state.shared.current_tab = shared::Tab::TableView;
+        log::debug!("Switched to Table View tab");
     } else if events.key(KeyCode::F(3)) {
         state.shared.current_tab = shared::Tab::ConfigEditor;
+        log::debug!("Switched to Config Editor tab");
     } else if events.key(KeyCode::F(4)) {
-        let users = state.shared.config["credentials"]
-            .members()
-            .collect::<Vec<_>>();
-        if !users.is_empty() {
-            let current_idx = users
-                .iter()
-                .position(|u| u.to_string() == state.shared.user)
-                .unwrap_or(0);
-            let next_idx = (current_idx + 1) % users.len();
-            state.shared.user = users[next_idx]["name"].to_string();
-        }
+        log::debug!("Select User tab is not implemented yet");
+    } else if events.key(KeyCode::F(10)) {
+        state.shared.current_tab = shared::Tab::LogViewer;
     } else if events.key(KeyCode::F(5)) {
         debug!("test")
     }
-
     Ok(())
 }
 
-pub fn main_tui() -> Result<(), Box<dyn std::error::Error>> {
+pub fn main_tui() -> Result<(), Box<dyn Error>> {
     // Initialize the application state
     let app_state = ExtendedAppState::default();
     Ok(App::new(100)?.widgets(widget).states(app_state).run()?)

@@ -81,91 +81,83 @@ jobs:
             os: ubuntu-latest
             os-name: linux
             arch: x86_64
-            pyarch: x64
+
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
             os-name: linux
             arch: x86_64
-            pyarch: x64
-            #- target: aarch64-unknown-linux-gnu
-            #  os: ubuntu-latest
-            #  os-name: linux
-            #  arch: aarch64
-            #  pyarch: arm64
-            #- target: aarch64-unknown-linux-musl
-            #  os: ubuntu-latest
-            #  os-name: linux
-            #  arch: aarch64
-            #  pyarch: arm64
+
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            os-name: linux
+            arch: aarch64
+            pyarch: arm64
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            os-name: linux
+            arch: aarch64
+            pyarch: arm64
 
             # Windows targets
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             os-name: windows
             arch: x86_64
-            pyarch: x64
+
           - target: x86_64-pc-windows-gnu
-            os: ubuntu-latest
+            os: windows-latest
             os-name: windows-gnu
             arch: x86_64
-            pyarch: x64
+
           - target: x86_64-pc-windows-gnullvm
-            os: ubuntu-latest
+            os: windows-latest
             os-name: windows-gnullvm
             arch: x86_64
-            pyarch: x64
-            #- target: aarch64-pc-windows-msvc
-            #  os: windows-latest
-            #  os-name: windows
-            #  arch: aarch64
-            #  pyarch: x64
-            #- target: aarch64-pc-windows-gnullvm
-            #  os: ubuntu-latest
-            #  os-name: windows-gnullvm
-            #  arch: aarch64
-            #  pyarch: x64
+
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            os-name: windows
+            arch: aarch64
+
+          - target: aarch64-pc-windows-gnullvm
+            os: windows-latest
+            os-name: windows-gnullvm
+            arch: aarch64
+
 
             # macOS targets
           - target: x86_64-apple-darwin
             os: macos-latest
             os-name: macos
             arch: x86_64
-            pyarch: x64
+
           - target: aarch64-apple-darwin
             os: macos-latest
             os-name: macos
             arch: aarch64
-            pyarch: arm64
 
             # BSD targets
-          #- target: x86_64-unknown-freebsd
-          #  os: ubuntu-latest
-          #  os-name: freebsd
-          #  arch: x86_64
-          #  pyarch: x64
+          - target: x86_64-unknown-freebsd
+            os: ubuntu-latest
+            os-name: freebsd
+            arch: x86_64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux build deps
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libfreetype6-dev clang mingw-w64 python3-pip  python3
+      - name: Install winget
+        if: runner.os == 'Windows'
+        uses: Cyberboss/install-winget@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          wget_release_id: latest
+      - name: Install Windows build deps
+        if: runner.os == 'Windows'
+        run: winget install --disable-interactivity --accept-package-agreements --accept-source-agreements BrechtSanders.WinLibs.POSIX.MSVCRT.LLVM Python.Python.3.13
       - name: add Rust Targets
         run: rustup target add ${{ matrix.target }}
-      #- uses: actions/setup-python@v5
-      #  id: cp313
-      #  with:
-      #    python-version: '3.13'
-      #    check-latest: true
-      #    update-environment: true
-      #    architecture: ${{ matrix.pyarch }}
-      #- name: Add Python to PATH manually (Windows)
-      #  if: runner.os == 'Windows'
-      #  run: |
-      #    echo "$env:Python_ROOT_DIR" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      #  shell: pwsh
-      #- name: Add Python to PATH manually (Unix)
-      #  if: runner.os != 'Windows'
-      #  run: echo "$Python_ROOT_DIR" >> $GITHUB_PATH
 
       - name: Extract Version
         id: extract_version

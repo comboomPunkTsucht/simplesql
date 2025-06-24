@@ -1,6 +1,6 @@
 [package]
 name = "simplesql"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2024"
 description = "simplesql is a modern, lightweight SQL client that runs in either optional Terminal (TUI) or Graphical (GUI) mode. Built for developers, DBAs, and power users who need fast, intuitive access to their databases."
 license = "MIT"

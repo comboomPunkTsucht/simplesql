@@ -149,6 +149,8 @@ jobs:
       - name: Install Linux build deps
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libfreetype6-dev clang mingw-w64 python3-pip  python3
+      - name: add Rust Targets
+        run: rustup target add ${{ matrix.target }}
       #- uses: actions/setup-python@v5
       #  id: cp313
       #  with:

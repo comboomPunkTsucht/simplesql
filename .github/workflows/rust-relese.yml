@@ -87,16 +87,14 @@ jobs:
             os-name: linux
             arch: x86_64
 
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            os-name: linux
-            arch: aarch64
-            pyarch: arm64
-          - target: aarch64-unknown-linux-musl
-            os: ubuntu-latest
-            os-name: linux
-            arch: aarch64
-            pyarch: arm64
+            #- target: aarch64-unknown-linux-gnu
+            #  os: ubuntu-latest
+            #  os-name: linux
+            #  arch: aarch64
+            #- target: aarch64-unknown-linux-musl
+            #  os: ubuntu-latest
+            #  os-name: linux
+            #  arch: aarch64
 
             # Windows targets
           - target: x86_64-pc-windows-msvc

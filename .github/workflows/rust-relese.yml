@@ -147,12 +147,6 @@ jobs:
       - name: Install Linux build deps
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libfreetype6-dev clang mingw-w64 python3-pip  python3
-      - name: Install winget
-        if: runner.os == 'Windows'
-        uses: Cyberboss/install-winget@v1
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          wget_release_id: latest
       - name: Install dependencies via Chocolatey
         if: runner.os == 'Windows' && matrix.arch == 'x86_64'
         run: choco install -y llvm mingw python --pre

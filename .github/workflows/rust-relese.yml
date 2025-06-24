@@ -114,15 +114,15 @@ jobs:
             os-name: windows-gnullvm
             arch: x86_64
 
-          - target: aarch64-pc-windows-msvc
-            os: windows-latest
-            os-name: windows
-            arch: aarch64
+            #- target: aarch64-pc-windows-msvc
+            #  os: windows-latest
+            #  os-name: windows
+            #  arch: aarch64
 
-          - target: aarch64-pc-windows-gnullvm
-            os: windows-latest
-            os-name: windows-gnullvm
-            arch: aarch64
+            #- target: aarch64-pc-windows-gnullvm
+            #  os: windows-latest
+            #  os-name: windows-gnullvm
+            #  arch: aarch64
 
 
             # macOS targets
@@ -153,9 +153,9 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           wget_release_id: latest
-      - name: Install Windows build deps
-        if: runner.os == 'Windows'
-        run: winget install --disable-interactivity --accept-package-agreements --accept-source-agreements BrechtSanders.WinLibs.POSIX.MSVCRT.LLVM Python.Python.3.13
+      - name: Install dependencies via Chocolatey
+        if: runner.os == 'Windows' && matrix.arch == 'x86_64'
+        run: choco install -y llvm mingw python --pre
       - name: add Rust Targets
         run: rustup target add ${{ matrix.target }}
 

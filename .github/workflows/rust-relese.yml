@@ -149,7 +149,7 @@ jobs:
         if: runner.os == 'Windows' && matrix.arch == 'x86_64'
         run: choco install -y llvm mingw
       - name: Python Setup
-        uses: actions/setup-python@v5More actions
+        uses: actions/setup-python@v5
         id: cp313
         with:
           python-version: '3.13'

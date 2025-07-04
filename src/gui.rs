@@ -2,6 +2,7 @@
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
+/*
 #[allow(unused_imports)]
 use crate::shared;
 #[allow(unused_imports)]
@@ -139,3 +140,4 @@ fn file_new() {
 fn file_open() {
     log::info!("open");
 }
+*/

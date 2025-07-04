@@ -1,12 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+// either ... or optional Graphical (GUI)
+
 //! # simplesql
-//! **simplesql** is a modern, lightweight SQL client that runs in either optional Terminal (TUI) or Graphical (GUI) mode. Built for developers, DBAs, and power users who need fast, intuitive access to their databases.
+//! **simplesql** is a modern, lightweight SQL client that runs in Terminal (TUI) mode. Built for developers, DBAs, and power users who need fast, intuitive access to their databases.
 //!
 //! ## 🔧 Features
 //!
-//! - Optional ⚡ Fast and responsive Terminal User Interface (TUI)
-//! - 🖼️ Graphical User Interface (GUI) for a more visual experience [WIP]
+//! - ⚡ Fast and responsive Terminal User Interface (TUI)
+// //! - Optional 🖼️ Graphical User Interface (GUI) for a more visual experience [WIP]
 //! - 🛠️ Simple command-line controls
 //! - 🔁 Cross-platform support: Linux, macOS, Windows, FreeBSD
 //!
@@ -31,7 +33,7 @@
 //!
 //! | Short | Long        | Description                                           |
 //! |-------|-------------|-------------------------------------------------------|
-//! | `-g`  | `--gui`     | Launch **simplesql** in graphical mode (default)      |
+// //! | `-g`  | `--gui`     | Launch **simplesql** in graphical mode (default)      |
 //! | `-t`, `-c` | `--tui`, `--cli`| Launch in terminal mode                      |
 //! | `-h`  | `--help`    | Show help message                                     |
 //! | `-V`  | `--version` | Show version info                                     |
@@ -57,15 +59,15 @@
 //!
 //! ---
 //!
-//! Made with ❤️ in Rust – because SQL should be simple.
+//! Made with ❤️ in Rust – because SQL access should be simple.
 
 #[allow(unused_imports)]
 use clap::{Arg, Command};
 #[allow(unused_imports)]
 use std::io::Write;
 
-#[allow(unused_imports)]
-mod gui;
+//#[allow(unused_imports)]
+//mod gui;
 #[allow(unused_imports)]
 mod shared;
 #[allow(unused_imports)]
@@ -110,23 +112,23 @@ fn main() {
         .visible_alias("cli")
         .visible_short_alias('c')
         .global(true)
-        .default_value("false")
-        .conflicts_with("gui")
+        .default_value("true")
+        //.conflicts_with("gui")
         .action(clap::ArgAction::SetTrue)
-        .long_help("When Flag is set the programm runs in the non default Terminal User Interface Mode")
-        .help("If set the programm runs in tui mode"),
+        .long_help("When Flag is set the programm runs in the default Terminal User Interface Mode")
+        .help("If set the programm runs in tui mode [default]"),
     )
-      .arg(
+     /* .arg(
           Arg::new("gui")
             .long("gui")
             .short('g')
             .global(true)
-            .default_value("true")
+            .default_value("false")
             .conflicts_with("tui")
             .action(clap::ArgAction::SetTrue)
-            .long_help("When Flag is set the programm runs in the default Graphical User Interface Mode. This is a work in progress and not yet fully implemented.")
-            .help("If set the program runs in gui mode [default] [WIP]"),
-      )
+            .long_help("When Flag is set the programm runs in the non default Graphical User Interface Mode. This is a work in progress and not yet fully implemented.")
+            .help("If set the program runs in gui mode [WIP]"),
+      )*/
     .get_matches();
     if let Err(e) = shared::check_and_gen_config() {
         eprintln!("Error generating config: {}", e);
@@ -142,7 +144,7 @@ fn main() {
             error!("{e}");
             std::process::exit(1);
         }
-    } else if matches.get_flag("gui") || !is_terminal {
+    } /*else if matches.get_flag("gui") || !is_terminal {
         // GUI mode
         unsafe {
             std::env::set_var("SLINT_BACKEND", "winit-skia");
@@ -152,7 +154,7 @@ fn main() {
             error!("{e}");
             std::process::exit(1);
         }
-    } else {
+    } */else {
         error!("try --help for more information");
     }
 }

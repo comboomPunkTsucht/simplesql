@@ -51,6 +51,7 @@ impl Tab {
         }
     }
 }
+#[allow(dead_code)]
 #[derive(Clone, PartialEq)]
 pub struct Connection {
     pub name: String,
@@ -59,6 +60,7 @@ pub struct Connection {
     pub port: u16,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, PartialEq)]
 pub struct Credential {
     pub name: String,
@@ -67,6 +69,7 @@ pub struct Credential {
     pub password: String,
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct Config {
     pub connections: Vec<Connection>,

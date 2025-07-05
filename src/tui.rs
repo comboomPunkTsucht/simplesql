@@ -25,7 +25,7 @@ use std::time::SystemTime;
 use tui_logger::{TuiLoggerLevelOutput, TuiLoggerSmartWidget, TuiLoggerWidget};
 #[allow(unused_imports)]
 use widgetui::{
-    crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode},
+    crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode, MouseEvent},
     *,
 };
 
@@ -59,6 +59,26 @@ fn widget(
         ])
         .split(frame.size());
 
+    let tab_string = vec!["SQL Editor", "Table View", "Config Editor", "Log Viewer"];
+
+    // Create and render tabs
+    let tabs = Tabs::new(tab_string)
+        .select(state.shared.current_tab.to_index())
+        .style(Style::default().bg(Color::Black).fg(Color::White))
+        .highlight_style(Style::default().bold().fg(Color::Black).bg(Color::White))
+        .divider("|")
+        .block(
+            Block::default()
+                .title("Tabs")
+                .borders(Borders::ALL)
+                .border_type(BorderType::Thick),
+        );
+
+    let h0chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(80), Constraint::Fill(1)])
+        .split(chunks[0]);
+
     match state.shared.current_tab {
         shared::Tab::SqlEditor => {
             state.editor_state.lines = Lines::from(state.shared.sql_query.clone());
@@ -74,25 +94,18 @@ fn widget(
 
     //jsonc SyntaxHighlighter
     let jsonc_syntax_highlighter: SyntaxHighlighter = SyntaxHighlighter::new("nord", "json");
-
-    // Create and render tabs
-    let tabs = Tabs::new(vec![
-        "SQL Editor",
-        "Table View",
-        "Config Editor",
-        "Log Viewer",
-    ])
-    .select(state.shared.current_tab.to_index())
-    .style(Style::default().bg(Color::Black).fg(Color::White))
-    .highlight_style(Style::default().bold().fg(Color::Black).bg(Color::White))
-    .divider("|")
-    .block(
-        Block::default()
-            .title("Tabs")
-            .borders(Borders::ALL)
-            .border_type(BorderType::Thick),
+    frame.render_widget(tabs.clone(), h0chunks[0]);
+    frame.render_widget(
+        Paragraph::new(state.shared.user.name.clone())
+            .style(Style::default().fg(Color::White).bg(Color::Black))
+            .block(
+                Block::default()
+                    .title("Selected User")
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Thick),
+            ),
+        h0chunks[1],
     );
-    frame.render_widget(tabs.clone(), chunks[0]);
     // Render main content based on selected tab
     match state.shared.current_tab {
         shared::Tab::SqlEditor => frame.render_widget(
@@ -173,7 +186,7 @@ fn widget(
         state.shared.current_tab = shared::Tab::ConfigEditor;
         log::debug!("Switched to Config Editor tab");
     } else if events.key(KeyCode::F(4)) {
-        log::debug!("Select User tab is not implemented yet");
+        state.shared.set_next_user();
     } else if events.key(KeyCode::F(10)) {
         state.shared.current_tab = shared::Tab::LogViewer;
     } else if events.key(KeyCode::F(5)) {

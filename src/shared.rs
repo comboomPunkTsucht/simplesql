@@ -51,24 +51,41 @@ impl Tab {
         }
     }
 }
+#[derive(Clone, PartialEq)]
+pub struct Connection {
+    pub name: String,
+    pub r#type: String,
+    pub host: String,
+    pub port: u16,
+}
+
+#[derive(Clone, PartialEq)]
+pub struct Credential {
+    pub name: String,
+    pub connection: Connection,
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Clone)]
+pub struct Config {
+    pub connections: Vec<Connection>,
+    pub credentials: Vec<Credential>,
+}
 
 #[allow(dead_code)]
 #[derive(Clone, State)]
 pub struct AppState {
     pub current_tab: Tab,
-    pub config: json::JsonValue,
+    pub config: Config,
     pub sql_query: String,
-    pub user: String,
+    pub user: Credential,
 }
 
 impl Default for AppState {
     fn default() -> Self {
-        let config = json::parse(&get_config_defaults()).unwrap();
-        let users = config["credentials"].members().collect::<Vec<_>>();
-        let mut user = String::new();
-        if !users.is_empty() {
-            user = users[0]["name"].to_string();
-        }
+        let config = get_config();
+        let user = config.credentials[0].clone();
         AppState {
             current_tab: Tab::default(),
             config,
@@ -78,7 +95,67 @@ impl Default for AppState {
     }
 }
 #[allow(dead_code)]
-impl AppState {}
+impl AppState {
+    pub fn set_next_user(&mut self) {
+        if self.config.credentials.is_empty() {
+            panic!("No credentials available in config");
+        }
+        let current_index = self
+            .config
+            .credentials
+            .iter()
+            .position(|c| c.name == self.user.name)
+            .unwrap_or(0);
+        let next_index = (current_index + 1) % self.config.credentials.len();
+        self.user = self.config.credentials[next_index].clone();
+    }
+}
+
+fn get_config() -> Config {
+    let config_path = get_config_path();
+    if !Path::new(&config_path).exists() {
+        panic!("Config file does not exist at {}", config_path);
+    }
+    let mut f = File::open(config_path).expect("Failed to open config file");
+    let mut buffer = String::new();
+    f.read_to_string(&mut buffer)
+        .expect("Failed to read config file");
+    let json_config = json::parse(&buffer).expect("Invalid JSON in config file");
+
+    let connections: Vec<_> = json_config["connections"]
+        .members()
+        .map(|c| Connection {
+            name: c["name"].to_string(),
+            r#type: c["type"].to_string(),
+            host: c["host"].to_string(),
+            port: c["port"].as_u16().unwrap_or(3306),
+        })
+        .collect();
+
+    let credentials = json_config["credentials"]
+        .members()
+        .map(|c| Credential {
+            name: c["name"].to_string(),
+            connection: connections
+                .iter()
+                .find(|conn| conn.name == c["connection"].to_string())
+                .cloned()
+                .unwrap_or_else(|| Connection {
+                    name: "Unknown".to_string(),
+                    r#type: "Unknown".to_string(),
+                    host: "localhost".to_string(),
+                    port: 3306,
+                }),
+            username: c["username"].to_string(),
+            password: c["password"].to_string(),
+        })
+        .collect();
+
+    Config {
+        connections,
+        credentials,
+    }
+}
 
 fn get_config_base_path() -> String {
     match std::env::consts::OS {
@@ -183,8 +260,7 @@ pub fn get_config_content(state: &mut AppState) -> std::io::Result<String> {
     let mut buffer = String::new();
     f.read_to_string(&mut buffer)?;
 
-    state.config = json::parse(&buffer).unwrap();
-    //println!("{}", json::stringify_pretty(state.config.clone(), 2));
+    state.config = get_config();
     Ok(buffer)
 }
 
@@ -197,6 +273,19 @@ pub fn gen_log_file() -> std::io::Result<()> {
     let mut f = File::create(get_log_path())?;
     f.write_all(String::new().as_bytes())?;
     Ok(())
+}
+#[allow(dead_code)]
+pub fn write_file(path: &str, content: &str) -> std::io::Result<()> {
+    let mut file = File::create(path)?;
+    file.write_all(content.as_bytes())?;
+    Ok(())
+}
+#[allow(dead_code)]
+pub fn read_file(path: &str) -> std::io::Result<String> {
+    let mut file = File::open(path)?;
+    let mut content = String::new();
+    file.read_to_string(&mut content)?;
+    Ok(content)
 }
 
 #[allow(dead_code)]
@@ -357,7 +446,7 @@ fn test_app_state_default_user() {
     cleanup();
     check_and_gen_config().unwrap();
     let state = AppState::default();
-    assert!(!state.user.is_empty());
+    assert!(!state.user.name.is_empty());
     assert_eq!(state.current_tab.to_index(), 0);
     assert!(state.sql_query.contains("select"));
     save_user_config(user_config);

@@ -1,12 +1,11 @@
 <!-- cargo-rdme start -->
 
 # simplesql
-**simplesql** is a modern, lightweight SQL client that runs in either optional Terminal (TUI) or Graphical (GUI) mode. Built for developers, DBAs, and power users who need fast, intuitive access to their databases.
+**simplesql** is a modern, lightweight SQL client that runs in Terminal (TUI) mode. Built for developers, DBAs, and power users who need fast, intuitive access to their databases.
 
 ## 🔧 Features
 
-- Optional ⚡ Fast and responsive Terminal User Interface (TUI)
-- 🖼️ Graphical User Interface (GUI) for a more visual experience [WIP]
+- ⚡ Fast and responsive Terminal User Interface (TUI)
 - 🛠️ Simple command-line controls
 - 🔁 Cross-platform support: Linux, macOS, Windows, FreeBSD
 
@@ -17,7 +16,7 @@ Clone the repository and build it using Cargo:
 ```bash
 git clone https://github.com/comboomPunkTsucht/simplesql.git
 cd simplesql
-rustup target add aarch64-apple-darwin aarch64-unknown-linux-gnu aarch64-unknown-linux-musl aarch64-pc-windows-msvc x86_64-apple-darwin x86_64-pc-windows-msvc x86_64-unknown-freebsd x86_64-unknown-linux-gnu x86_64-unknown-linux-musl
+rustup target add aarch64-apple-darwin aarch64-unknown-linux-gnu aarch64-unknown-linux-musl aarch64-pc-windows-msvc aarch64-pc-windows-gnullvm x86_64-apple-darwin x86_64-pc-windows-msvc x86_64-unknown-freebsd x86_64-unknown-linux-gnu x86_64-unknown-linux-musl x86_64-pc-windows-gnu x86_64-pc-windows-gnullvm x86_64-pc-windows-gnu x86_64-pc-windows-gnu
 cargo build --release
 ```
 
@@ -31,7 +30,6 @@ cargo build --release
 
 | Short | Long        | Description                                           |
 |-------|-------------|-------------------------------------------------------|
-| `-g`  | `--gui`     | Launch **simplesql** in graphical mode (default)      |
 | `-t`, `-c` | `--tui`, `--cli`| Launch in terminal mode                      |
 | `-h`  | `--help`    | Show help message                                     |
 | `-V`  | `--version` | Show version info                                     |
@@ -57,6 +55,6 @@ Licensed under the [MIT License](LICENSE).
 
 ---
 
-Made with ❤️ in Rust – because SQL should be simple.
+Made with ❤️ in Rust – because SQL access should be simple.
 
 <!-- cargo-rdme end -->

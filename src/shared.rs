@@ -119,10 +119,14 @@ fn get_config() -> Config {
     if !Path::new(&config_path).exists() {
         panic!("Config file does not exist at {}", config_path);
     }
-    let mut f = File::open(config_path).expect("Failed to open config file");
+    let mut f = File::open(config_path).unwrap();
     let mut buffer = String::new();
-    f.read_to_string(&mut buffer)
-        .expect("Failed to read config file");
+    f.read_to_string(&mut buffer).unwrap();
+        //.expect("Failed to read config file");
+    if buffer.is_empty() {
+        buffer = get_config_defaults();
+    }
+    
     let json_config = json::parse(&buffer).expect("Invalid JSON in config file");
 
     let connections: Vec<_> = json_config["connections"]
@@ -259,9 +263,12 @@ pub fn check_and_gen_config() -> std::io::Result<()> {
 }
 
 pub fn get_config_content(state: &mut AppState) -> std::io::Result<String> {
-    let mut f = File::open(get_config_path())?;
+    let mut f = File::open(get_config_path()).unwrap();
     let mut buffer = String::new();
-    f.read_to_string(&mut buffer)?;
+    f.read_to_string(&mut buffer).unwrap();
+    if buffer.is_empty() {
+        buffer = get_config_defaults();
+    }
 
     state.config = get_config();
     Ok(buffer)

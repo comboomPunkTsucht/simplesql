@@ -59,7 +59,7 @@ fn widget(
         ])
         .split(frame.size());
 
-    let tab_string = vec!["SQL Editor", "Table View", "Config Editor", "Log Viewer"];
+    let tab_string = vec!["SQL Editor", "Table View", "Log Viewer"];
 
     // Create and render tabs
     let tabs = Tabs::new(tab_string)
@@ -82,10 +82,6 @@ fn widget(
     match state.shared.current_tab {
         shared::Tab::SqlEditor => {
             state.editor_state.lines = Lines::from(state.shared.sql_query.clone());
-        }
-        shared::Tab::ConfigEditor => {
-            state.editor_state.lines =
-                Lines::from(shared::get_config_content(&mut state.shared).unwrap_or_default());
         }
         _ => {}
     }
@@ -119,13 +115,6 @@ fn widget(
             Block::default().title("Table View").borders(Borders::ALL),
             chunks[1],
         ),
-        shared::Tab::ConfigEditor => frame.render_widget(
-            EditorView::new(&mut state.editor_state)
-                .wrap(true)
-                .theme(Theme::new().editor)
-                .syntax_highlighter(Some(jsonc_syntax_highlighter)),
-            chunks[1],
-        ),
         shared::Tab::LogViewer => frame.render_widget(
             TuiLoggerWidget::default()
                 .output_separator('-')
@@ -146,15 +135,15 @@ fn widget(
 
     // Render help bar
     let help_text = Paragraph::new(
-            format!("F1: SQL Editor | F2: Table View | F3: Config Editor | F4: Select User | F5: Run | F10: Logs | F12: Quit"),
-        )
-          .style(Style::default().fg(Color::Gray).bg(Color::Black))
-          .block(
-              Block::default()
-                .title("Help")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Thick),
-          );
+        "F1: SQL Editor | F2: Table View | F4: Select User | F5: Run | F10: Logs | F12: Quit",
+    )
+    .style(Style::default().fg(Color::Gray).bg(Color::Black))
+    .block(
+        Block::default()
+            .title("Help")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Thick),
+    );
     frame.render_widget(help_text, chunks[2]);
 
     // Handle editor events
@@ -164,9 +153,6 @@ fn widget(
     match state.shared.current_tab {
         shared::Tab::SqlEditor => {
             state.shared.sql_query = get_editor_lines_as_string(&state);
-        }
-        shared::Tab::ConfigEditor => {
-            let _ = shared::set_config_content(get_editor_lines_as_string(&state));
         }
         _ => {}
     }
@@ -182,8 +168,6 @@ fn widget(
     } else if events.key(KeyCode::F(2)) {
         state.shared.current_tab = shared::Tab::TableView;
         log::debug!("Switched to Table View tab");
-    } else if events.key(KeyCode::F(3)) {
-        state.shared.current_tab = shared::Tab::ConfigEditor;
         log::debug!("Switched to Config Editor tab");
     } else if events.key(KeyCode::F(4)) {
         state.shared.set_next_user();

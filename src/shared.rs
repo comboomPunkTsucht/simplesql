@@ -21,7 +21,6 @@ use widgetui::State;
 pub enum Tab {
     SqlEditor,
     TableView,
-    ConfigEditor,
     LogViewer,
 }
 impl Default for Tab {
@@ -36,8 +35,7 @@ impl Tab {
         match index {
             0 => Tab::SqlEditor,
             1 => Tab::TableView,
-            2 => Tab::ConfigEditor,
-            3 => Tab::LogViewer,
+            2 => Tab::LogViewer,
             _ => panic!("Invalid tab index"),
         }
     }
@@ -46,8 +44,7 @@ impl Tab {
         match self {
             Tab::SqlEditor => 0,
             Tab::TableView => 1,
-            Tab::ConfigEditor => 2,
-            Tab::LogViewer => 3,
+            Tab::LogViewer => 2,
         }
     }
 }
@@ -122,11 +119,11 @@ fn get_config() -> Config {
     let mut f = File::open(config_path).unwrap();
     let mut buffer = String::new();
     f.read_to_string(&mut buffer).unwrap();
-        //.expect("Failed to read config file");
+    //.expect("Failed to read config file");
     if buffer.is_empty() {
         buffer = get_config_defaults();
     }
-    
+
     let json_config = json::parse(&buffer).expect("Invalid JSON in config file");
 
     let connections: Vec<_> = json_config["connections"]
@@ -466,10 +463,8 @@ fn test_app_state_default_user() {
 fn test_tab_index_conversion() {
     assert_eq!(Tab::from_index(0), Tab::SqlEditor);
     assert_eq!(Tab::from_index(1), Tab::TableView);
-    assert_eq!(Tab::from_index(2), Tab::ConfigEditor);
     assert_eq!(Tab::SqlEditor.to_index(), 0);
     assert_eq!(Tab::TableView.to_index(), 1);
-    assert_eq!(Tab::ConfigEditor.to_index(), 2);
 }
 
 #[test]

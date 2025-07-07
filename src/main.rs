@@ -60,14 +60,13 @@
 //! ---
 //!
 //! Made with ❤️ in Rust – because SQL access should be simple.
-
 #[allow(unused_imports)]
 use clap::{Arg, Command};
 #[allow(unused_imports)]
 use std::io::Write;
 
-//#[allow(unused_imports)]
-//mod gui;
+#[allow(unused_imports)]
+mod gui;
 #[allow(unused_imports)]
 mod shared;
 #[allow(unused_imports)]
@@ -103,22 +102,7 @@ fn main() {
     .version(version)
     .author(authors)
     .about(description)
-    .arg(
-      Arg::new("tui")
-        .long("tui")
-        .short('t')
-        .alias("cli")
-        .short_alias('c')
-        .visible_alias("cli")
-        .visible_short_alias('c')
-        .global(true)
-        .default_value("true")
-        //.conflicts_with("gui")
-        .action(clap::ArgAction::SetTrue)
-        .long_help("When Flag is set the programm runs in the default Terminal User Interface Mode")
-        .help("If set the programm runs in tui mode [default]"),
-    )
-     /* .arg(
+     .arg(
           Arg::new("gui")
             .long("gui")
             .short('g')
@@ -127,8 +111,35 @@ fn main() {
             .conflicts_with("tui")
             .action(clap::ArgAction::SetTrue)
             .long_help("When Flag is set the programm runs in the non default Graphical User Interface Mode. This is a work in progress and not yet fully implemented.")
-            .help("If set the program runs in gui mode [WIP]"),
-      )*/
+            .help("If set the program runs in gui mode [WIP]")
+         )
+      .arg(
+          Arg::new("web")
+            .long("web")
+            .short('w')
+            .default_value("false")
+            .conflicts_with("tui")
+            .requires_if("true","gui")
+            .action(clap::ArgAction::SetTrue)
+            .long_help("When Flag is set the programm runs in the Web User Interface Mode. This is a work in progress and not yet fully implemented.")
+            .help("If set the program runs in web mode [WIP]")
+      )
+      .arg(
+          Arg::new("tui")
+            .long("tui")
+            .short('t')
+            .alias("cli")
+            .short_alias('c')
+            .visible_alias("cli")
+            .visible_short_alias('c')
+            .global(true)
+            .default_value("true")
+            .conflicts_with("gui")
+            .conflicts_with("web")
+            .action(clap::ArgAction::SetTrue)
+            .long_help("When Flag is set the programm runs in the default Terminal User Interface Mode")
+            .help("If set the programm runs in tui mode [default]")
+      )
     .get_matches();
     if let Err(e) = shared::check_and_gen_config() {
         eprintln!("Error generating config: {}", e);
@@ -137,24 +148,30 @@ fn main() {
     let is_terminal = (atty::is(atty::Stream::Stdout) || atty::is(atty::Stream::Stderr))
         && !matches.args_present();
     shared::setup_logger(matches.get_flag("tui") || is_terminal).unwrap();
-    if matches.get_flag("tui") || is_terminal {
+    if matches.get_flag("gui") || !is_terminal {
+        // GUI mode
+        // gui modes
+        let gui_mode = if matches.get_flag("web") {
+            "web"
+        } else {
+            "native" // default to native if neither web nor native is specified
+        };
+        unsafe {
+            std::env::set_var("SLINT_BACKEND", "winit-skia");
+        }
+        info!("GUI Mode activated");
+        if let Err(e) = gui::main_gui(gui_mode) {
+            error!("{e}");
+            std::process::exit(1);
+        }
+    } else if matches.get_flag("tui") || is_terminal {
         // TUI mode
         info!("TUI Mode activated");
         if let Err(e) = tui::main_tui() {
             error!("{e}");
             std::process::exit(1);
         }
-    } /*else if matches.get_flag("gui") || !is_terminal {
-        // GUI mode
-        unsafe {
-            std::env::set_var("SLINT_BACKEND", "winit-skia");
-        }
-        info!("GUI Mode activated");
-        if let Err(e) = gui::main_gui() {
-            error!("{e}");
-            std::process::exit(1);
-        }
-    } */else {
+    } else {
         error!("try --help for more information");
     }
 }

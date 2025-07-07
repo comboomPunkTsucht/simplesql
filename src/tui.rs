@@ -176,7 +176,7 @@ fn widget(
         state.shared.current_tab = shared::Tab::LogViewer;
     } else if events.key(KeyCode::F(5)) {
         debug!("test")
-    } else if events.key(KeyCode::F(8)) { 
+    } else if events.key(KeyCode::F(8)) {
         // save the current query to a file
         let now = SystemTime::now();
         let timestamp = now
@@ -185,7 +185,7 @@ fn widget(
             .as_secs();
         let filename = format!("query_{}.sql", timestamp);
         shared::write_file(format!("./{}",filename).as_str(),state.shared.sql_query.as_str()).unwrap();
-    } else if events.key(KeyCode::F(9)) { 
+    } else if events.key(KeyCode::F(9)) {
         debug!("test to load a query from a file");
     }
     Ok(())

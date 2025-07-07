@@ -49,7 +49,7 @@ impl Tab {
     }
 }
 #[allow(dead_code)]
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Connection {
     pub name: String,
     pub r#type: String,
@@ -58,7 +58,7 @@ pub struct Connection {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Credential {
     pub name: String,
     pub connection: Connection,

@@ -179,7 +179,12 @@ fn get_log_path() -> String {
 }
 
 pub fn setup_logger(is_tui: bool) -> Result<(), fern::InitError> {
-    let log_level = log::LevelFilter::Trace;
+    
+    let log_level = if cfg!(debug_assertions) {
+        log::LevelFilter::Trace
+    } else {
+        log::LevelFilter::Info
+    };
     if is_tui {
         tui_logger::init_logger(log_level).unwrap();
         tui_logger::set_default_level(log_level);

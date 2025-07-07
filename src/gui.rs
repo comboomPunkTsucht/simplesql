@@ -3,13 +3,18 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+use std::sync::Arc;
 #[allow(unused_imports)]
 use crate::shared;
 #[allow(unused_imports)]
 use crate::shared::{AppState, NordColor};
+use iced::futures::AsyncReadExt;
+use iced::widget::text_editor::{Action, Content, Edit};
+use iced::window::settings::PlatformSpecific;
 #[allow(unused_imports)]
 use iced::{
-    highlighter, widget::{button, column, container, row, text, text_input}, Alignment, ContentFit, Element, Fill, Length,
+    highlighter, widget::{button, column, container, row, text, text_editor}, window, Alignment, ContentFit, Element, Fill, Font, Length, Pixels,
+    Size,
     Theme,
 };
 #[allow(unused_imports)]
@@ -25,6 +30,27 @@ pub fn main_gui() -> Result<(), Box<dyn std::error::Error>> {
         ExtendedAppState::view,
     )
     .theme(theme)
+    .window(window::Settings::from(window::Settings {
+        size: Size::new(1920.0, 1080.0),
+        position: window::Position::Default,
+        min_size: Some(Size::new(1280.0, 720.0)),
+        max_size: None,
+        visible: true,
+        decorations: true,
+        transparent: true,
+        level: window::Level::Normal,
+        icon: None,
+        platform_specific: window::settings::PlatformSpecific::default(),
+        resizable: true,
+        exit_on_close_request: true,
+    }))
+    .settings(iced::Settings {
+        id: Some("simplesql".to_string()),
+        antialiasing: true,
+        default_text_size: Pixels::from(16),
+        default_font: Font::default(),
+        fonts: vec![],
+    })
     .run()
     {
         error!("Application error: {}", e);
@@ -35,28 +61,37 @@ pub fn main_gui() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 enum Message {
-    SQLQuery(String),
+    SQLQuery(text_editor::Action),
     SetUser(shared::Credential),
     RunQuery,
 }
 
-#[derive(Clone, State)]
 struct ExtendedAppState {
     pub shared: shared::AppState,
-    // More fields can be added here as needed
+    pub content: text_editor::Content, // More fields can be added here as needed
 }
 impl Default for ExtendedAppState {
     fn default() -> Self {
+        let shared = shared::AppState::default();
+        let mut content = text_editor::Content::new();
+        content.perform(Action::Edit(Edit::Paste(Arc::from(shared.sql_query.clone()))));
         ExtendedAppState {
-            shared: shared::AppState::default(),
+            shared,
+            content
         }
     }
 }
 impl ExtendedAppState {
+    #[allow(dead_code)]
+    pub fn new() -> Self {
+        Self::default()
+    }
+    #[allow(dead_code)]
     fn update(&mut self, message: Message) {
         match message {
-            Message::SQLQuery(query) => {
-                self.shared.sql_query = query;
+            Message::SQLQuery(action) => {
+                self.content.perform(action);
+                self.shared.sql_query = self.content.text();
             }
             Message::SetUser(credential) => {
                 self.shared.user = credential;
@@ -67,12 +102,14 @@ impl ExtendedAppState {
             }
         }
     }
+    #[allow(dead_code)]
     fn view(&self) -> Element<Message> {
-        let input = text_input("SQL Query", &self.shared.sql_query)
-            .on_input(Message::SQLQuery)
+        let input = text_editor(&self.content)
+            .placeholder("Enter your SQL query here...")
+          .highlight("sql", highlighter::Theme::SolarizedDark)
+            .on_action(Message::SQLQuery)
             .padding(10)
-            .size(16)
-            .width(Length::Fill);
+            .size(16);
 
         let run_button = button("Run Query").on_press(Message::RunQuery).padding(10);
 

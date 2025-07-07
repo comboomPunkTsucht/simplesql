@@ -162,17 +162,17 @@ fn widget(
         events.register_exit();
     } else if events.key(KeyCode::F(1)) {
         state.shared.current_tab = shared::Tab::SqlEditor;
-        log::debug!("Switched to SQL Editor tab");
+        log::info!("Switched to SQL Editor tab");
     } else if events.key(KeyCode::F(2)) {
         state.shared.current_tab = shared::Tab::TableView;
-        log::debug!("Switched to Table View tab");
-        log::debug!("Switched to Config Editor tab");
+        log::info!("Switched to Table View tab");
+        log::info!("Switched to Config Editor tab");
     } else if events.key(KeyCode::F(4)) {
         state.shared.set_next_user();
     } else if events.key(KeyCode::F(10)) {
         state.shared.current_tab = shared::Tab::LogViewer;
     } else if events.key(KeyCode::F(5)) {
-        debug!("test")
+        info!("test")
     } else if events.key(KeyCode::F(8)) {
         // save the current query to a file
         let now = SystemTime::now();
@@ -181,9 +181,13 @@ fn widget(
             .unwrap()
             .as_secs();
         let filename = format!("query_{}.sql", timestamp);
-        shared::write_file(format!("./{}",filename).as_str(),state.shared.sql_query.as_str()).unwrap();
+        shared::write_file(
+            format!("./{}", filename).as_str(),
+            state.shared.sql_query.as_str(),
+        )
+        .unwrap();
     } else if events.key(KeyCode::F(9)) {
-        debug!("test to load a query from a file");
+        info!("test to load a query from a file");
     }
     Ok(())
 }

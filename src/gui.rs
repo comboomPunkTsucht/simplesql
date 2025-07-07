@@ -18,8 +18,7 @@ use log::{debug, error, info, trace, warn};
 use std::time::SystemTime;
 use widgetui::State;
 
-pub fn main_gui(mode: &str) -> Result<(), Box<dyn std::error::Error>> {
-    info!("Starting GUI in mode: {}", mode);
+pub fn main_gui() -> Result<(), Box<dyn std::error::Error>> {
     if let Err(e) = iced::application(
         "simplesql",
         ExtendedAppState::update,
@@ -33,6 +32,7 @@ pub fn main_gui(mode: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 enum Message {
     SQLQuery(String),
@@ -86,6 +86,7 @@ impl ExtendedAppState {
     }
 }
 
+#[allow(unused_variables)]
 fn theme(state: &ExtendedAppState) -> Theme {
     Theme::Nord
 }

@@ -88,9 +88,6 @@ fn widget(
     }
     // Create SQL SyntaxHighlighter
     let sql_syntax_highlighter: SyntaxHighlighter = SyntaxHighlighter::new("nord", "sql");
-
-    //jsonc SyntaxHighlighter
-    let jsonc_syntax_highlighter: SyntaxHighlighter = SyntaxHighlighter::new("nord", "json");
     frame.render_widget(tabs.clone(), h0chunks[0]);
     frame.render_widget(
         Paragraph::new(state.shared.user.name.clone())

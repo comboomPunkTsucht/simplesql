@@ -42,7 +42,7 @@ chrono = "*"
 # main.rs
 clap = "*"
 # gui.rs
-iced = { version = "*", features = ["highlighter", "tokio", "debug", "wgpu", "markdown", ] }
+iced = { version = "*", features = ["default", "highlighter", "tokio", "debug", "wgpu", "markdown", ] }
 # shared.rs
 sqlx = { version = "*", features = ["runtime-tokio", "tls-rustls-ring-native-roots", "postgres", "mysql", "any", "derive", "macros"] }
 json = "*"
@@ -50,3 +50,4 @@ log = "*"
 fern = "*"
 atty = "*"
 humantime = "*"
+

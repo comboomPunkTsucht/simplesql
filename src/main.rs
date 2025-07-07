@@ -114,17 +114,6 @@ fn main() {
             .help("If set the program runs in gui mode [WIP]")
          )
       .arg(
-          Arg::new("web")
-            .long("web")
-            .short('w')
-            .default_value("false")
-            .conflicts_with("tui")
-            .requires_if("true","gui")
-            .action(clap::ArgAction::SetTrue)
-            .long_help("When Flag is set the programm runs in the Web User Interface Mode. This is a work in progress and not yet fully implemented.")
-            .help("If set the program runs in web mode [WIP]")
-      )
-      .arg(
           Arg::new("tui")
             .long("tui")
             .short('t')
@@ -135,7 +124,6 @@ fn main() {
             .global(true)
             .default_value("true")
             .conflicts_with("gui")
-            .conflicts_with("web")
             .action(clap::ArgAction::SetTrue)
             .long_help("When Flag is set the programm runs in the default Terminal User Interface Mode")
             .help("If set the programm runs in tui mode [default]")
@@ -150,17 +138,8 @@ fn main() {
     shared::setup_logger(matches.get_flag("tui") || is_terminal).unwrap();
     if matches.get_flag("gui") || !is_terminal {
         // GUI mode
-        // gui modes
-        let gui_mode = if matches.get_flag("web") {
-            "web"
-        } else {
-            "native" // default to native if neither web nor native is specified
-        };
-        unsafe {
-            std::env::set_var("SLINT_BACKEND", "winit-skia");
-        }
         info!("GUI Mode activated");
-        if let Err(e) = gui::main_gui(gui_mode) {
+        if let Err(e) = gui::main_gui() {
             error!("{e}");
             std::process::exit(1);
         }

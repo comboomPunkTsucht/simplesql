@@ -50,4 +50,5 @@ log = "*"
 fern = "*"
 atty = "*"
 humantime = "*"
+tokio = { version = "*", features = ["rt", "rt-multi-thread", "macros"] }
 

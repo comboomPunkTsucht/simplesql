@@ -3,12 +3,11 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use std::sync::Arc;
 #[allow(unused_imports)]
 use crate::shared;
 #[allow(unused_imports)]
 use crate::shared::{AppState, NordColor};
-use iced::futures::AsyncReadExt;
+use iced::futures::{AsyncBufReadExt, AsyncReadExt};
 use iced::widget::text_editor::{Action, Content, Edit};
 use iced::window::settings::PlatformSpecific;
 #[allow(unused_imports)]
@@ -19,6 +18,7 @@ use iced::{
 };
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
+use std::sync::Arc;
 #[allow(unused_imports)]
 use std::time::SystemTime;
 use widgetui::State;
@@ -74,11 +74,10 @@ impl Default for ExtendedAppState {
     fn default() -> Self {
         let shared = shared::AppState::default();
         let mut content = text_editor::Content::new();
-        content.perform(Action::Edit(Edit::Paste(Arc::from(shared.sql_query.clone()))));
-        ExtendedAppState {
-            shared,
-            content
-        }
+        content.perform(Action::Edit(Edit::Paste(Arc::from(
+            shared.sql_query.clone(),
+        ))));
+        ExtendedAppState { shared, content }
     }
 }
 impl ExtendedAppState {
@@ -106,10 +105,10 @@ impl ExtendedAppState {
     fn view(&self) -> Element<Message> {
         let input = text_editor(&self.content)
             .placeholder("Enter your SQL query here...")
-          .highlight("sql", highlighter::Theme::SolarizedDark)
+            .highlight("sql", highlighter::Theme::SolarizedDark)
             .on_action(Message::SQLQuery)
             .padding(10)
-            .size(16);
+            .size(16).height(Length::Fill);
 
         let run_button = button("Run Query").on_press(Message::RunQuery).padding(10);
 

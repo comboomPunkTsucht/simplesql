@@ -4,6 +4,17 @@
 // https://opensource.org/licenses/MIT
 #[cfg(test)]
 use json;
+use sqlx::any::AnyQueryResult;
+use sqlx::mysql::MySqlQueryResult;
+use sqlx::postgres::PgQueryResult;
+#[allow(unused_imports)]
+use sqlx::{
+    any::{AnyPoolOptions, AnyRow}, mysql::{MySqlPoolOptions, MySqlRow}, postgres::{PgPoolOptions, PgRow}, Any, Column,
+    MySql,
+    Postgres,
+    Row,
+};
+use std::ops::Deref;
 use std::path::Path;
 #[allow(unused_imports)]
 use std::time::SystemTime;
@@ -73,6 +84,131 @@ pub struct Config {
     pub credentials: Vec<Credential>,
 }
 
+enum RawRow {
+    MySql(Vec<MySqlRow>),
+    Postgres(Vec<PgRow>),
+    Any(Vec<AnyRow>),
+}
+
+#[allow(dead_code)]
+enum RawData {
+    MySql(MySqlQueryResult),
+    Postgres(PgQueryResult),
+    Any(AnyQueryResult),
+}
+
+#[allow(dead_code)]
+pub struct Table {
+    pub headers: Vec<String>,
+    pub rows: Vec<Vec<String>>,
+    pub raw_data: Option<RawData>,
+}
+impl Clone for Table {
+    fn clone(&self) -> Self {
+        Table {
+            headers: self.headers.clone(),
+            rows: self.rows.clone(),
+            raw_data: None,
+        }
+    }
+    fn clone_from(&mut self, source: &Self) {
+        self.headers.clone_from(&source.headers);
+        self.rows.clone_from(&source.rows);
+        self.raw_data = None;
+    }
+}
+impl Table {
+    #[allow(dead_code)]
+    pub fn new() -> Self {
+        Self::default()
+    }
+    #[allow(dead_code)]
+    pub fn from_raw_Row(raw_row: RawRow, raw_data: RawData) -> Self {
+        let mut headers = Vec::new();
+        let mut rows = Vec::new();
+
+        match raw_row {
+            RawRow::MySql(row_vec) => {
+                if let Some(first_row) = row_vec.first() {
+                    headers = first_row
+                        .columns()
+                        .iter()
+                        .map(|col| col.name().to_string())
+                        .collect();
+
+                    for row in &row_vec {
+                        let values: Vec<String> = headers
+                            .iter()
+                            .map(|h| {
+                                row.try_get::<Option<String>, _>(h.as_str())
+                                    .unwrap_or(None)
+                                    .unwrap_or_else(|| "NULL".to_string())
+                            })
+                            .collect();
+                        rows.push(values);
+                    }
+                }
+            }
+            RawRow::Postgres(row_vec) => {
+                if let Some(first_row) = row_vec.first() {
+                    headers = first_row
+                        .columns()
+                        .iter()
+                        .map(|col| col.name().to_string())
+                        .collect();
+
+                    for row in &row_vec {
+                        let values: Vec<String> = headers
+                            .iter()
+                            .map(|h| {
+                                row.try_get::<Option<String>, _>(h.as_str())
+                                    .unwrap_or(None)
+                                    .unwrap_or_else(|| "NULL".to_string())
+                            })
+                            .collect();
+                        rows.push(values);
+                    }
+                }
+            }
+            RawRow::Any(row_vec) => {
+                if let Some(first_row) = row_vec.first() {
+                    headers = first_row
+                        .columns()
+                        .iter()
+                        .map(|col| col.name().to_string())
+                        .collect();
+
+                    for row in &row_vec {
+                        let values: Vec<String> = headers
+                            .iter()
+                            .map(|h| {
+                                row.try_get::<Option<String>, _>(h.as_str())
+                                    .unwrap_or(None)
+                                    .unwrap_or_else(|| "NULL".to_string())
+                            })
+                            .collect();
+                        rows.push(values);
+                    }
+                }
+            }
+        }
+        Table {
+            headers,
+            rows,
+            raw_data: Some(raw_data),
+        }
+    }
+}
+impl Default for Table {
+    fn default() -> Self {
+        Table {
+            headers: Vec::new(),
+            rows: Vec::new(),
+            raw_data: None,
+        }
+    }
+}
+
 #[allow(dead_code)]
 #[derive(Clone, State)]
 pub struct AppState {
@@ -80,6 +216,8 @@ pub struct AppState {
     pub config: Config,
     pub sql_query: String,
     pub user: Credential,
+    pub table: Table, // Optional table name for TableView tab
+    pub db: String,
 }
 
 impl Default for AppState {
@@ -89,8 +227,10 @@ impl Default for AppState {
         AppState {
             current_tab: Tab::default(),
             config,
-            sql_query: String::from("select * from test;"),
+            sql_query: String::from("select * from data;"),
             user,
+            table: Table::default(),
+            db: String::from("bewerbungen"),
         }
     }
 }
@@ -179,7 +319,6 @@ fn get_log_path() -> String {
 }
 
 pub fn setup_logger(is_tui: bool) -> Result<(), fern::InitError> {
-    
     let log_level = if cfg!(debug_assertions) {
         log::LevelFilter::Trace
     } else {
@@ -298,6 +437,70 @@ pub fn read_file(path: &str) -> std::io::Result<String> {
     let mut content = String::new();
     file.read_to_string(&mut content)?;
     Ok(content)
+}
+
+#[tokio::main]
+pub async fn run_query(state: &mut AppState) -> Result<(), sqlx::Error> {
+    sqlx::any::install_default_drivers();
+    match state.user.connection.r#type.as_str() {
+        "mariadb" | "mysql" => {
+            let pool = MySqlPoolOptions::new()
+                .max_connections(10)
+                .connect(&format!(
+                    "mysql://{}:{}@{}:{}/{}",
+                    state.user.username,
+                    state.user.password,
+                    state.user.connection.host,
+                    state.user.connection.port,
+                    state.db
+                ))
+                .await?;
+            let rows = sqlx::query(&state.sql_query).fetch_all(&pool).await?;
+            state.table = Table::from_raw_Row(
+                RawRow::MySql(rows),
+                RawData::MySql(sqlx::query(&state.sql_query).execute(&pool).await?),
+            );
+        }
+        "postgres" => {
+            let pool = PgPoolOptions::new()
+                .max_connections(10)
+                .connect(&format!(
+                    "postgres://{}:{}@{}:{}/{}",
+                    state.user.username,
+                    state.user.password,
+                    state.user.connection.host,
+                    state.user.connection.port,
+                    state.db
+                ))
+                .await?;
+            let rows = sqlx::query(&state.sql_query).fetch_all(&pool).await?;
+            state.table = Table::from_raw_Row(
+                RawRow::Postgres(rows),
+                RawData::Postgres(sqlx::query(&state.sql_query).execute(&pool).await?),
+            );
+        }
+        _ => {
+            let pool = AnyPoolOptions::new()
+                .max_connections(10)
+                .connect(&format!(
+                    "{}://{}:{}@{}:{}/{}",
+                    state.user.connection.r#type,
+                    state.user.username,
+                    state.user.password,
+                    state.user.connection.host,
+                    state.user.connection.port,
+                    state.db
+                ))
+                .await?;
+            let rows = sqlx::query(&state.sql_query).fetch_all(&pool).await?;
+            state.table = Table::from_raw_Row(
+                RawRow::Any(rows),
+                RawData::Any(sqlx::query(&state.sql_query).execute(&pool).await?),
+            );
+        }
+    }
+
+    Ok(())
 }
 
 #[allow(dead_code)]

@@ -77,7 +77,11 @@ fn widget(
 
     let h0chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(80), Constraint::Fill(1)])
+        .constraints([
+            Constraint::Percentage(60),
+            Constraint::Percentage(20),
+            Constraint::Percentage(20),
+        ])
         .split(chunks[0]);
 
     match state.shared.current_tab {
@@ -98,6 +102,17 @@ fn widget(
                     .borders(Borders::ALL)
                     .border_type(BorderType::Thick),
             ),
+        h0chunks[2],
+    );
+    frame.render_widget(
+        Paragraph::new(state.shared.db.clone())
+            .style(Style::default().fg(Color::White).bg(Color::Black))
+            .block(
+                Block::default()
+                    .title("DB")
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Thick),
+            ),
         h0chunks[1],
     );
     // Render main content based on selected tab
@@ -109,10 +124,54 @@ fn widget(
                 .syntax_highlighter(Some(sql_syntax_highlighter)),
             chunks[1],
         ),
-        shared::Tab::TableView => frame.render_widget(
-            Block::default().title("Table View").borders(Borders::ALL),
-            chunks[1],
-        ),
+        shared::Tab::TableView => {
+            if state.shared.table.headers.is_empty() && state.shared.table.rows.is_empty() {
+                frame.render_widget(
+                    Paragraph::new("No data available")
+                        .style(Style::default().fg(Color::White).bg(Color::Black))
+                        .block(
+                            Block::default()
+                                .title("Table View")
+                                .borders(Borders::ALL)
+                                .border_type(BorderType::Thick),
+                        ),
+                    chunks[1],
+                );
+            } else {
+                // Header-Zeile
+                let header = Row::new(state.shared.table.headers.clone());
+
+                // Datenzeilen
+                let rows = state
+                    .shared
+                    .table
+                    .rows
+                    .iter()
+                    .map(|row| Row::new(row.clone()));
+
+                // Spaltenbreiten dynamisch anpassen
+                let col_count = state.shared.table.headers.len();
+                let col_widths =
+                    vec![Constraint::Percentage(100 / col_count.max(1) as u16); col_count];
+
+                frame.render_widget(
+                    Table::default()
+                        .rows(rows)
+                        .header(header)
+                        .block(
+                            Block::default()
+                                .title("Table View")
+                                .borders(Borders::ALL)
+                                .border_type(BorderType::Thick),
+                        )
+                        .cell_highlight_style(Style::default().fg(Color::White).bg(Color::Black))
+                        .row_highlight_style(Style::default().fg(Color::Black).bg(Color::White))
+                        .widths(&col_widths),
+                    chunks[1],
+                );
+            }
+        }
+
         shared::Tab::LogViewer => frame.render_widget(
             TuiLoggerWidget::default()
                 .output_separator('-')
@@ -162,17 +221,19 @@ fn widget(
         events.register_exit();
     } else if events.key(KeyCode::F(1)) {
         state.shared.current_tab = shared::Tab::SqlEditor;
-        log::info!("Switched to SQL Editor tab");
+        info!("Switched to SQL Editor tab");
     } else if events.key(KeyCode::F(2)) {
         state.shared.current_tab = shared::Tab::TableView;
-        log::info!("Switched to Table View tab");
-        log::info!("Switched to Config Editor tab");
+        info!("Switched to Table View tab");
+        info!("Switched to Config Editor tab");
     } else if events.key(KeyCode::F(4)) {
         state.shared.set_next_user();
     } else if events.key(KeyCode::F(10)) {
         state.shared.current_tab = shared::Tab::LogViewer;
     } else if events.key(KeyCode::F(5)) {
-        info!("test")
+        if let Err(e) = shared::run_query(&mut state.shared) {
+            error!("Error running query: {}", e);
+        }
     } else if events.key(KeyCode::F(8)) {
         // save the current query to a file
         let now = SystemTime::now();

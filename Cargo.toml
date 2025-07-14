@@ -38,6 +38,7 @@ widgetui = "*"
 crossterm = "*"
 edtui = "*"
 tui-logger = "*"
+tui-textarea = { version = "*", features = ["search"] }
 chrono = "*"
 # main.rs
 clap = "*"

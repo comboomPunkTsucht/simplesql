@@ -4,3 +4,4 @@
 /.jj
 Cargo.lock
 /.simplesql
+*.sql

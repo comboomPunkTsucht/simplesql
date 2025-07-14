@@ -23,7 +23,7 @@ use std::sync::Arc;
 use std::time::SystemTime;
 use widgetui::State;
 
-pub fn main_gui() -> Result<(), Box<dyn std::error::Error>> {
+pub fn main_gui(file_content: String) -> Result<(), Box<dyn std::error::Error>> {
     if let Err(e) = iced::application(
         "simplesql",
         ExtendedAppState::update,

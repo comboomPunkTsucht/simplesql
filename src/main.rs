@@ -127,26 +127,37 @@ fn main() {
             .action(clap::ArgAction::SetTrue)
             .long_help("When Flag is set the programm runs in the default Terminal User Interface Mode")
             .help("If set the programm runs in tui mode [default]")
-      )
+      ).arg(
+        Arg::new("file")
+          .help("SQL file to load on startup")
+          .long_help("The SQL file to load on startup. If not provided, the program will start with an empty state.")
+          .value_name("FILE")
+          .index(1)  // Positional argument
+    )
     .get_matches();
     if let Err(e) = shared::check_and_gen_config() {
         eprintln!("Error generating config: {}", e);
         std::process::exit(1);
     }
     let is_terminal = (atty::is(atty::Stream::Stdout) || atty::is(atty::Stream::Stderr))
-        && !matches.args_present();
+        && !matches.get_flag("gui");
     shared::setup_logger(matches.get_flag("tui") || is_terminal).unwrap();
+    let mut file_content = String::new();
+    if let Some(file_path) = matches.get_one::<String>("file").map(|s| s.as_str()) {
+        file_content = shared::read_file(file_path).unwrap();
+    }
+
     if matches.get_flag("gui") || !is_terminal {
         // GUI mode
         info!("GUI Mode activated");
-        if let Err(e) = gui::main_gui() {
+        if let Err(e) = gui::main_gui(file_content) {
             error!("{e}");
             std::process::exit(1);
         }
     } else if matches.get_flag("tui") || is_terminal {
         // TUI mode
         info!("TUI Mode activated");
-        if let Err(e) = tui::main_tui() {
+        if let Err(e) = tui::main_tui(file_content) {
             error!("{e}");
             std::process::exit(1);
         }

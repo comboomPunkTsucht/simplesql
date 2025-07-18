@@ -84,14 +84,14 @@ pub struct Config {
     pub credentials: Vec<Credential>,
 }
 
-enum RawRow {
+pub enum RawRow {
     MySql(Vec<MySqlRow>),
     Postgres(Vec<PgRow>),
     Any(Vec<AnyRow>),
 }
 
 #[allow(dead_code)]
-enum RawData {
+pub enum RawData {
     MySql(MySqlQueryResult),
     Postgres(PgQueryResult),
     Any(AnyQueryResult),
@@ -123,7 +123,7 @@ impl Table {
         Self::default()
     }
     #[allow(dead_code)]
-    pub fn from_raw_Row(raw_row: RawRow, raw_data: RawData) -> Self {
+    pub fn from_raw_row(raw_row: RawRow, raw_data: RawData) -> Self {
         let mut headers = Vec::new();
         let mut rows = Vec::new();
 
@@ -456,7 +456,7 @@ pub async fn run_query(state: &mut AppState) -> Result<(), sqlx::Error> {
                 ))
                 .await?;
             let rows = sqlx::query(&state.sql_query).fetch_all(&pool).await?;
-            state.table = Table::from_raw_Row(
+            state.table = Table::from_raw_row(
                 RawRow::MySql(rows),
                 RawData::MySql(sqlx::query(&state.sql_query).execute(&pool).await?),
             );
@@ -474,7 +474,7 @@ pub async fn run_query(state: &mut AppState) -> Result<(), sqlx::Error> {
                 ))
                 .await?;
             let rows = sqlx::query(&state.sql_query).fetch_all(&pool).await?;
-            state.table = Table::from_raw_Row(
+            state.table = Table::from_raw_row(
                 RawRow::Postgres(rows),
                 RawData::Postgres(sqlx::query(&state.sql_query).execute(&pool).await?),
             );
@@ -493,7 +493,7 @@ pub async fn run_query(state: &mut AppState) -> Result<(), sqlx::Error> {
                 ))
                 .await?;
             let rows = sqlx::query(&state.sql_query).fetch_all(&pool).await?;
-            state.table = Table::from_raw_Row(
+            state.table = Table::from_raw_row(
                 RawRow::Any(rows),
                 RawData::Any(sqlx::query(&state.sql_query).execute(&pool).await?),
             );

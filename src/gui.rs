@@ -23,7 +23,7 @@ use std::sync::Arc;
 use std::time::SystemTime;
 use widgetui::State;
 
-pub fn main_gui(file_content: String) -> Result<(), Box<dyn std::error::Error>> {
+pub fn main_gui(_file_content: String) -> Result<(), Box<dyn std::error::Error>> {
     if let Err(e) = iced::application(
         "simplesql",
         ExtendedAppState::update,
@@ -108,7 +108,8 @@ impl ExtendedAppState {
             .highlight("sql", highlighter::Theme::SolarizedDark)
             .on_action(Message::SQLQuery)
             .padding(10)
-            .size(16).height(Length::Fill);
+            .size(16)
+            .height(Length::Fill);
 
         let run_button = button("Run Query").on_press(Message::RunQuery).padding(10);
 

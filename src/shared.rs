@@ -81,7 +81,6 @@ pub struct Credential {
 #[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Config {
-    #[serde(rename = "$schema")]
     pub schema: Option<String>,
     pub connections: Vec<Connection>,
     pub credentials: Vec<Credential>,
@@ -316,7 +315,7 @@ pub fn setup_logger(is_tui: bool) -> Result<(), fern::InitError> {
 }
 fn get_config_defaults() -> String {
     r#"
-        schema = "https://raw.githubusercontent.com/comboomPunkTsucht/simplesql/main/src/simplesql_config.toml"
+        schema = "https://raw.githubusercontent.com/comboomPunkTsucht/simplesql/main/src/simplesql_config.json"
         [[connections]]
         name = "Local mariaDB"
         type = "mariadb"

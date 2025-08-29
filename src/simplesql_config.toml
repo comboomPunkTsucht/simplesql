@@ -1,0 +1,58 @@
+# simple-sql-schema.toml
+
+title = "simplesql Configuration"
+type = "object"
+
+[[properties.connections]]
+type = "array"
+description = "List of database connections"
+
+[[properties.connections.items]]
+type = "object"
+required = ["name", "type", "host", "port"]
+additionalProperties = false
+
+[properties.connections.items.properties.name]
+type = "string"
+description = "Display name of the connection"
+
+[properties.connections.items.properties.type]
+type = "string"
+description = "Type of the database"
+enum = ["mysql", "mariadb", "postgresql"]
+
+[properties.connections.items.properties.host]
+type = "string"
+description = "Hostname or IP address"
+
+[properties.connections.items.properties.port]
+type = "integer"
+description = "Port number"
+
+[[properties.credentials]]
+type = "array"
+description = "Credentials linked to a connection"
+
+[[properties.credentials.items]]
+type = "object"
+required = ["name", "connection", "username", "password"]
+additionalProperties = false
+
+[properties.credentials.items.properties.name]
+type = "string"
+description = "Name of this credential set"
+
+[properties.credentials.items.properties.connection]
+type = "string"
+description = "Name of the connection this credential belongs to"
+
+[properties.credentials.items.properties.username]
+type = "string"
+description = "Database username"
+
+[properties.credentials.items.properties.password]
+type = "string"
+description = "Database password"
+
+required = ["connections", "credentials"]
+additionalProperties = false

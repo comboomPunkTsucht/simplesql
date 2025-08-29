@@ -46,7 +46,10 @@ clap = "*"
 iced = { version = "*", features = ["default", "highlighter", "tokio", "debug", "wgpu", "markdown", "advanced", "system", "auto-detect-theme"], default-features = false }
 # shared.rs
 sqlx = { version = "*", features = ["runtime-tokio", "tls-rustls-ring-native-roots", "postgres", "mysql", "any", "derive", "macros"] }
-json = "*"
+serde = { version = "*", features = ["derive"] }
+toml = "*"
+serde_json = "*"
+json5 = "*"
 log = "*"
 fern = "*"
 atty = "*"

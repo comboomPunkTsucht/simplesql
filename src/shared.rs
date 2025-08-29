@@ -2,14 +2,14 @@
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
+
+use json5::*;
 #[cfg(test)]
-use json;
-use sqlx::any::AnyQueryResult;
-use sqlx::mysql::MySqlQueryResult;
-use sqlx::postgres::PgQueryResult;
+use serde::*;
+use serde_json::*;
 #[allow(unused_imports)]
 use sqlx::{
-    any::{AnyPoolOptions, AnyRow}, mysql::{MySqlPoolOptions, MySqlRow}, postgres::{PgPoolOptions, PgRow}, Any, Column,
+    any::{AnyPoolOptions, AnyQueryResult, AnyRow}, mysql::{MySqlPoolOptions, MySqlQueryResult, MySqlRow}, postgres::{PgPoolOptions, PgQueryResult, PgRow}, Any, Column,
     MySql,
     Postgres,
     Row,
@@ -23,7 +23,9 @@ use std::{
     fs,
     fs::{create_dir_all, remove_dir_all, remove_file, File},
     io::{Read, Write},
+    result::Result,
 };
+use toml::*;
 use tui_logger::TuiLoggerFile;
 #[allow(unused_imports)]
 use widgetui::State;
@@ -60,30 +62,31 @@ impl Tab {
     }
 }
 #[allow(dead_code)]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Connection {
     pub name: String,
+    #[serde(rename = "type")]
     pub r#type: String,
     pub host: String,
     pub port: u16,
 }
-
 #[allow(dead_code)]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Credential {
     pub name: String,
-    pub connection: Connection,
+    pub connection: String,
     pub username: String,
     pub password: String,
 }
-
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Config {
+    #[serde(rename = "$schema")]
+    pub schema: Option<String>,
     pub connections: Vec<Connection>,
     pub credentials: Vec<Credential>,
 }
-
+#[allow(dead_code)]
 pub enum RawRow {
     MySql(Vec<MySqlRow>),
     Postgres(Vec<PgRow>),
@@ -222,8 +225,8 @@ pub struct AppState {
 
 impl Default for AppState {
     fn default() -> Self {
-        let config = get_config();
-        let user = config.credentials[0].clone();
+        let config: Config = get_config();
+        let user: Credential = config.credentials[0].clone();
         AppState {
             current_tab: Tab::default(),
             config,
@@ -252,53 +255,18 @@ impl AppState {
 }
 
 fn get_config() -> Config {
-    let config_path = get_config_path();
-    if !Path::new(&config_path).exists() {
-        panic!("Config file does not exist at {}", config_path);
+    let toml_path = format!("{}/config.toml", get_config_base_path());
+    let config: Config;
+
+    // TOML bevorzugt
+    if Path::new(&toml_path).exists() {
+        let content = fs::read_to_string(&toml_path).expect("Failed to read config.toml");
+        config = toml::from_str(&content).expect("Invalid TOML in config file");
+    } else {
+        // Fallback: Defaults
+        config = toml::from_str(&get_config_defaults()).expect("Default config is invalid");
     }
-    let mut f = File::open(config_path).unwrap();
-    let mut buffer = String::new();
-    f.read_to_string(&mut buffer).unwrap();
-    //.expect("Failed to read config file");
-    if buffer.is_empty() {
-        buffer = get_config_defaults();
-    }
-
-    let json_config = json::parse(&buffer).expect("Invalid JSON in config file");
-
-    let connections: Vec<_> = json_config["connections"]
-        .members()
-        .map(|c| Connection {
-            name: c["name"].to_string(),
-            r#type: c["type"].to_string(),
-            host: c["host"].to_string(),
-            port: c["port"].as_u16().unwrap_or(3306),
-        })
-        .collect();
-
-    let credentials = json_config["credentials"]
-        .members()
-        .map(|c| Credential {
-            name: c["name"].to_string(),
-            connection: connections
-                .iter()
-                .find(|conn| conn.name == c["connection"].to_string())
-                .cloned()
-                .unwrap_or_else(|| Connection {
-                    name: "Unknown".to_string(),
-                    r#type: "Unknown".to_string(),
-                    host: "localhost".to_string(),
-                    port: 3306,
-                }),
-            username: c["username"].to_string(),
-            password: c["password"].to_string(),
-        })
-        .collect();
-
-    Config {
-        connections,
-        credentials,
-    }
+    config
 }
 
 fn get_config_base_path() -> String {
@@ -311,7 +279,7 @@ fn get_config_base_path() -> String {
     }
 }
 fn get_config_path() -> String {
-    format!("{}/config.json", get_config_base_path())
+    format!("{}/config.toml", get_config_base_path())
 }
 
 fn get_log_path() -> String {
@@ -347,45 +315,39 @@ pub fn setup_logger(is_tui: bool) -> Result<(), fern::InitError> {
     Ok(())
 }
 fn get_config_defaults() -> String {
-    r#"{
-  "$schema": "https://raw.githubusercontent.com/comboomPunkTsucht/simplesql/main/src/simplesql_config.json",
-  "connections": [
-    {
-      "name": "Local mariaDB",
-      "type": "mariadb",
-      "host": "localhost",
-      "port": 3306
-    },
-    {
-      "name": "Local MySQL",
-      "type": "mysql",
-      "host": "localhost",
-      "port": 3306
-    },
-    {
-      "name": "Local PostgreSQL",
-      "type": "postgresql",
-      "host": "localhost",
-      "port": 5432
-    }
-  ],
-  "credentials": [
-    {
-      "name": "mysql_default",
-      "connection": "Local mariaDB",
-      "username": "root",
-      "password": ""
-    },
-    {
-      "name": "postgresql_default",
-      "connection": "Local PostgreSQL",
-      "username": "postgres",
-      "password": ""
-    }
-  ]
-}
-"#
-          .to_string()
+    r#"
+        schema = "https://raw.githubusercontent.com/comboomPunkTsucht/simplesql/main/src/simplesql_config.toml"
+        [[connections]]
+        name = "Local mariaDB"
+        type = "mariadb"
+        host = "localhost"
+        port = 3306
+
+        [[connections]]
+        name = "Local MySQL"
+        type = "mysql"
+        host = "localhost"
+        port = 3306
+
+        [[connections]]
+        name = "Local PostgreSQL"
+        type = "postgresql"
+        host = "localhost"
+        port = 5432
+
+        [[credentials]]
+        name = "mysql_default"
+        connection = "Local mariaDB"
+        username = "root"
+        password = ""
+
+        [[credentials]]
+        name = "postgresql_default"
+        connection = "Local PostgreSQL"
+        username = "postgres"
+        password = ""
+    "#
+    .to_string()
 }
 
 pub fn check_and_gen_config() -> std::io::Result<()> {
@@ -414,10 +376,12 @@ pub fn get_config_content(state: &mut AppState) -> std::io::Result<String> {
     state.config = get_config();
     Ok(buffer)
 }
-
 pub fn set_config_content(buffer: String) -> std::io::Result<()> {
+    // immer TOML schreiben
+    let config: Config = toml::from_str(&buffer).or_else(|_| serde_json::from_str(&buffer))?;
+    let toml_str = toml::to_string_pretty(&config).expect("Failed to serialize config to TOML");
     let mut f = File::create(get_config_path())?;
-    f.write_all(buffer.as_bytes())?;
+    f.write_all(toml_str.as_bytes())?;
     Ok(())
 }
 pub fn gen_log_file() -> std::io::Result<()> {
@@ -442,7 +406,13 @@ pub fn read_file(path: &str) -> std::io::Result<String> {
 #[tokio::main]
 pub async fn run_query(state: &mut AppState) -> Result<(), sqlx::Error> {
     sqlx::any::install_default_drivers();
-    match state.user.connection.r#type.as_str() {
+    let connection: &Connection = state
+        .config
+        .connections
+        .iter()
+        .find(|c| c.name == state.user.connection)
+        .expect("Connection not found");
+    match connection.r#type.as_str() {
         "mariadb" | "mysql" => {
             let pool = MySqlPoolOptions::new()
                 .max_connections(10)
@@ -450,8 +420,8 @@ pub async fn run_query(state: &mut AppState) -> Result<(), sqlx::Error> {
                     "mysql://{}:{}@{}:{}/{}",
                     state.user.username,
                     state.user.password,
-                    state.user.connection.host,
-                    state.user.connection.port,
+                    (*connection).host,
+                    (*connection).port,
                     state.db
                 ))
                 .await?;
@@ -468,8 +438,8 @@ pub async fn run_query(state: &mut AppState) -> Result<(), sqlx::Error> {
                     "postgres://{}:{}@{}:{}/{}",
                     state.user.username,
                     state.user.password,
-                    state.user.connection.host,
-                    state.user.connection.port,
+                    (*connection).host,
+                    (*connection).port,
                     state.db
                 ))
                 .await?;
@@ -484,11 +454,11 @@ pub async fn run_query(state: &mut AppState) -> Result<(), sqlx::Error> {
                 .max_connections(10)
                 .connect(&format!(
                     "{}://{}:{}@{}:{}/{}",
-                    state.user.connection.r#type,
+                    (*connection).r#type,
                     state.user.username,
                     state.user.password,
-                    state.user.connection.host,
-                    state.user.connection.port,
+                    (*connection).host,
+                    (*connection).port,
                     state.db
                 ))
                 .await?;
@@ -634,7 +604,7 @@ fn test_get_and_set_config_content() {
     let read_back = get_config_content(&mut state).unwrap();
     assert!(read_back.contains("Test mariaDB"));
     // Rücksetzen nur, wenn das Original gültiges JSON ist
-    if json::parse(&original).is_ok() {
+    if serde_json::from_str::<Config>(original.as_str()).is_ok() {
         set_config_content(original).unwrap();
     } else {
         panic!("Original-Konfiguration ist ungültig und kann nicht zurückgesetzt werden!");

@@ -12,9 +12,9 @@ use iced::widget::text_editor::{Action, Content, Edit};
 use iced::window::settings::PlatformSpecific;
 #[allow(unused_imports)]
 use iced::{
-    highlighter, widget::{button, column, container, row, text, text_editor}, window, Alignment, ContentFit, Element, Fill, Font, Length, Pixels,
-    Size,
-    Theme,
+  highlighter, widget::{button, column, container, row, text, text_editor}, window, Alignment, ContentFit, Element, Fill, Font, Length, Pixels,
+  Size,
+  Theme,
 };
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
@@ -24,6 +24,13 @@ use std::time::SystemTime;
 use widgetui::State;
 
 pub fn main_gui(_file_content: String) -> Result<(), Box<dyn std::error::Error>> {
+    /*let mut state = ExtendedAppState::default();
+    if file_content.is_empty() {
+        state.shared.sql_query = file_content;
+        state.content.perform(Action::Edit(Edit::Paste(Arc::from(
+            state.shared.sql_query.clone(),
+        ))));
+    }*/
     if let Err(e) = iced::application(
         "simplesql",
         ExtendedAppState::update,

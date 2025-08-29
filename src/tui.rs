@@ -12,6 +12,7 @@ use edtui::{
 };
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
+use ratatui::layout::Flex;
 #[allow(unused_imports)]
 use ratatui::{
     layout::{Constraint, Direction, Layout},

@@ -315,35 +315,35 @@ pub fn setup_logger(is_tui: bool) -> Result<(), fern::InitError> {
 }
 fn get_config_defaults() -> String {
     r#"
-        [[connections]]
-        name = "Local mariaDB"
-        type = "mariadb"
-        host = "localhost"
-        port = 3306
+[[connections]]
+  name = "Local mariaDB"
+  type = "mariadb"
+  host = "localhost"
+  port = 3306
 
-        [[connections]]
-        name = "Local MySQL"
-        type = "mysql"
-        host = "localhost"
-        port = 3306
+[[connections]]
+  name = "Local MySQL"
+  type = "mysql"
+  host = "localhost"
+  port = 3306
 
-        [[connections]]
-        name = "Local PostgreSQL"
-        type = "postgresql"
-        host = "localhost"
-        port = 5432
+[[connections]]
+  name = "Local PostgreSQL"
+  type = "postgresql"
+  host = "localhost"
+  port = 5432
 
-        [[credentials]]
-        name = "mysql_default"
-        connection = "Local mariaDB"
-        username = "root"
-        password = ""
+[[credentials]]
+  name = "mysql_default"
+  connection = "Local mariaDB"
+  username = "root"
+  password = ""
 
-        [[credentials]]
-        name = "postgresql_default"
-        connection = "Local PostgreSQL"
-        username = "postgres"
-        password = ""
+[[credentials]]
+  name = "postgresql_default"
+  connection = "Local PostgreSQL"
+  username = "postgres"
+  password = ""
     "#
     .to_string()
 }

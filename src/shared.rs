@@ -315,7 +315,6 @@ pub fn setup_logger(is_tui: bool) -> Result<(), fern::InitError> {
 }
 fn get_config_defaults() -> String {
     r#"
-        schema = "https://raw.githubusercontent.com/comboomPunkTsucht/simplesql/main/src/simplesql_config.json"
         [[connections]]
         name = "Local mariaDB"
         type = "mariadb"

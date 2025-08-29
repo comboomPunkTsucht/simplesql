@@ -9,10 +9,10 @@ use serde::*;
 use serde_json::*;
 #[allow(unused_imports)]
 use sqlx::{
-    any::{AnyPoolOptions, AnyQueryResult, AnyRow}, mysql::{MySqlPoolOptions, MySqlQueryResult, MySqlRow}, postgres::{PgPoolOptions, PgQueryResult, PgRow}, Any, Column,
-    MySql,
-    Postgres,
-    Row,
+  any::{AnyPoolOptions, AnyQueryResult, AnyRow}, mysql::{MySqlPoolOptions, MySqlQueryResult, MySqlRow}, postgres::{PgPoolOptions, PgQueryResult, PgRow}, Any, Column,
+  MySql,
+  Postgres,
+  Row,
 };
 use std::ops::Deref;
 use std::path::Path;
@@ -20,10 +20,10 @@ use std::path::Path;
 use std::time::SystemTime;
 #[allow(unused_imports)]
 use std::{
-    fs,
-    fs::{create_dir_all, remove_dir_all, remove_file, File},
-    io::{Read, Write},
-    result::Result,
+  fs,
+  fs::{create_dir_all, remove_dir_all, remove_file, File},
+  io::{Read, Write},
+  result::Result,
 };
 use toml::*;
 use tui_logger::TuiLoggerFile;

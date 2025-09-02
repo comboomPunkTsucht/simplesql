@@ -12,9 +12,9 @@ use iced::widget::text_editor::{Action, Content, Edit};
 use iced::window::settings::PlatformSpecific;
 #[allow(unused_imports)]
 use iced::{
-  highlighter, widget::{button, column, container, row, text, text_editor}, window, Alignment, ContentFit, Element, Fill, Font, Length, Pixels,
-  Size,
-  Theme,
+    highlighter, widget::{button, column, container, row, text, text_editor}, window, Alignment, ContentFit, Element, Fill, Font, Length, Pixels,
+    Size,
+    Theme,
 };
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
@@ -109,7 +109,7 @@ impl ExtendedAppState {
         }
     }
     #[allow(dead_code)]
-    fn view(&self) -> Element<Message> {
+    fn view(&self) -> Element<'_, Message> {
         let input = text_editor(&self.content)
             .placeholder("Enter your SQL query here...")
             .highlight("sql", highlighter::Theme::SolarizedDark)

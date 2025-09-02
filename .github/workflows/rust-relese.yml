@@ -123,7 +123,6 @@ jobs:
             #  os-name: windows-gnullvm
             #  arch: aarch64
 
-
             # macOS targets
           - target: x86_64-apple-darwin
             os: macos-latest
@@ -136,19 +135,23 @@ jobs:
             arch: aarch64
 
           # BSD targets
-          - target: x86_64-unknown-freebsd
-            os: ubuntu-latest
-            os-name: freebsd
-            arch: x86_64
+          #- target: x86_64-unknown-freebsd
+          #  os: ubuntu-latest
+          #  os-name: freebsd
+          #  arch: x86_64
+
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Install Linux build deps
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libfreetype6-dev clang mingw-w64
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libfreetype6-dev clang
+
       - name: Install dependencies via Chocolatey
         if: runner.os == 'Windows' && matrix.arch == 'x86_64'
         run: choco install -y llvm mingw
+
       - name: Python Setup
         uses: actions/setup-python@v5
         id: cp313
@@ -156,25 +159,31 @@ jobs:
           python-version: '3.13'
           check-latest: true
           update-environment: true
+
       - name: Add Python to PATH manually (Windows)
         if: runner.os == 'Windows'
         run: |
           echo "$env:Python_ROOT_DIR" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         shell: pwsh
+
       - name: Add Python to PATH manually (Unix)
         if: runner.os != 'Windows'
         run: echo "$Python_ROOT_DIR" >> $GITHUB_PATH
+
       - name: add Rust Targets
         run: rustup target add ${{ matrix.target }}
+
       - name: Extract Version
         id: extract_version
         run: |
           version=${GITHUB_REF#refs/tags/v}
           echo "version=$version" >> $GITHUB_ENV
         shell: bash
+
       - name: add Targets
         run: rustup target add ${{ matrix.target }}
         shell: bash
+
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: simplesql

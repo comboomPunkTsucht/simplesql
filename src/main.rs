@@ -125,8 +125,8 @@ fn main() {
             .default_value("true")
             .conflicts_with("gui")
             .action(clap::ArgAction::SetTrue)
-            .long_help("When Flag is set the programm runs in the default Terminal User Interface Mode. Press F1 for help inside the TUI.")
-            .help("If set the programm runs in tui mode [default]. Press F1 for help inside the TUI.")
+            .long_help("When Flag is set the programm runs in the default Terminal User Interface Mode.\nPress F1 for help inside the TUI.")
+            .help("If set the programm runs in tui mode [default].\nPress F1 for help inside the TUI. -")
       ).arg(
         Arg::new("file")
           .help("SQL file to load on startup")

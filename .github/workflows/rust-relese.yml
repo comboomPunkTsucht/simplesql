@@ -87,14 +87,15 @@ jobs:
             os-name: linux
             arch: x86_64
 
-            #- target: aarch64-unknown-linux-gnu
-            #  os: ubuntu-latest
-            #  os-name: linux
-            #  arch: aarch64
-            #- target: aarch64-unknown-linux-musl
-            #  os: ubuntu-latest
-            #  os-name: linux
-            #  arch: aarch64
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            os-name: linux
+            arch: aarch64
+
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            os-name: linux
+            arch: aarch64
 
             # Windows targets
           - target: x86_64-pc-windows-msvc
@@ -102,20 +103,20 @@ jobs:
             os-name: windows
             arch: x86_64
 
-          - target: x86_64-pc-windows-gnu
-            os: windows-latest
-            os-name: windows-gnu
-            arch: x86_64
+          #- target: x86_64-pc-windows-gnu
+          #  os: windows-latest
+          #  os-name: windows-gnu
+          #  arch: x86_64
 
-          - target: x86_64-pc-windows-gnullvm
-            os: windows-latest
-            os-name: windows-gnullvm
-            arch: x86_64
+          #- target: x86_64-pc-windows-gnullvm
+          #  os: windows-latest
+          #  os-name: windows-gnullvm
+          #  arch: x86_64
 
-            #- target: aarch64-pc-windows-msvc
-            #  os: windows-latest
-            #  os-name: windows
-            #  arch: aarch64
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            os-name: windows
+            arch: aarch64
 
             #- target: aarch64-pc-windows-gnullvm
             #  os: windows-latest
@@ -134,11 +135,11 @@ jobs:
             os-name: macos
             arch: aarch64
 
-            # BSD targets
-          #- target: x86_64-unknown-freebsd
-          #  os: ubuntu-latest
-          #  os-name: freebsd
-          #  arch: x86_64
+          # BSD targets
+          - target: x86_64-unknown-freebsd
+            os: ubuntu-latest
+            os-name: freebsd
+            arch: x86_64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

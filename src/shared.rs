@@ -2,11 +2,8 @@
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
-
-use json5::*;
 #[cfg(test)]
 use serde::*;
-use serde_json::*;
 #[allow(unused_imports)]
 use sqlx::{
     any::{AnyPoolOptions, AnyQueryResult, AnyRow}, mysql::{MySqlPoolOptions, MySqlQueryResult, MySqlRow}, postgres::{PgPoolOptions, PgQueryResult, PgRow}, Any, Column,
@@ -396,7 +393,7 @@ pub fn get_config_content(state: &mut AppState) -> std::io::Result<String> {
 }
 pub fn set_config_content(buffer: String) -> std::io::Result<()> {
     // immer TOML schreiben
-    let config: Config = toml::from_str(&buffer).or_else(|_| serde_json::from_str(&buffer))?;
+    let config: Config = toml::from_str(&buffer).expect("Invalid TOML format");
     let toml_str = toml::to_string_pretty(&config).expect("Failed to serialize config to TOML");
     let mut f = File::create(get_config_path())?;
     f.write_all(toml_str.as_bytes())?;
@@ -622,7 +619,7 @@ fn test_get_and_set_config_content() {
     let read_back = get_config_content(&mut state).unwrap();
     assert!(read_back.contains("Test mariaDB"));
     // Rücksetzen nur, wenn das Original gültiges JSON ist
-    if serde_json::from_str::<Config>(original.as_str()).is_ok() {
+    if toml::from_str::<Config>(original.as_str()).is_ok() {
         set_config_content(original).unwrap();
     } else {
         panic!("Original-Konfiguration ist ungültig und kann nicht zurückgesetzt werden!");

@@ -14,6 +14,7 @@ use edtui::{
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
 use ratatui::layout::Flex;
+use ratatui::symbols::border;
 #[allow(unused_imports)]
 use ratatui::{
     layout::{Constraint, Direction, Layout},
@@ -21,12 +22,14 @@ use ratatui::{
     style::{Color, Style},
     widgets::*,
 };
+use std::cmp::PartialEq;
 #[allow(unused_imports)]
 use std::error::Error;
 use std::fmt::format;
 use std::ops::Deref;
 use std::time::SystemTime;
 use tui_logger::{TuiLoggerLevelOutput, TuiLoggerSmartWidget, TuiLoggerWidget};
+use tui_popup::Popup;
 use tui_textarea::{CursorMove, TextArea};
 #[allow(unused_imports)]
 use widgetui::{
@@ -65,7 +68,7 @@ const SHORTCUTS: &[Shortcut<'_>] = &[
     Shortcut {
         key: KeyCode::F(3),
         modifiers: None,
-        description: "Input the Databasename for the Connection",
+        description: "Input the Databasename for the Connection to the Database",
         alternative_shortcut: None,
     },
     Shortcut {
@@ -224,6 +227,7 @@ pub struct ExtendedAppState {
     pub show_help: bool,
     pub show_file_popup: bool,
     pub file_save: Option<FileAction>,
+    pub file_popup_is_active: bool,
 }
 impl Default for ExtendedAppState {
     fn default() -> Self {
@@ -245,6 +249,7 @@ impl Default for ExtendedAppState {
             show_help: false,
             show_file_popup: false,
             file_save: None,
+            file_popup_is_active: false,
         }
     }
 }
@@ -273,6 +278,16 @@ fn activate(textarea: &mut TextArea<'_>) {
     );
 }
 
+impl PartialEq for FileAction {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (FileAction::Save, FileAction::Save) => true,
+            (FileAction::Load, FileAction::Load) => true,
+            _ => false,
+        }
+    }
+}
+
 fn widget(
     mut frame: ResMut<WidgetFrame>,
     mut events: ResMut<Events>,
@@ -284,10 +299,10 @@ fn widget(
     // Prüfe die aktuelle Terminal-Größe
     let terminal_size = frame.size();
     let popup_size = Rect {
-        x: terminal_size.width / 4,
+        x: (terminal_size.width * 10u16) / 100u16,
         y: terminal_size.height / 4,
-        width: terminal_size.width / 2,
-        height: terminal_size.height / 2,
+        width: (terminal_size.width * 80u16) / 100u16,
+        height: 3,
     };
 
     // Wenn das Terminal zu klein ist, zeige eine Fehlermeldung
@@ -427,7 +442,15 @@ fn widget(
                     .table
                     .rows
                     .iter()
-                    .map(|row| Row::new(row.clone()));
+                    .enumerate()
+                    .map(|(idx, row)| {
+                        let style = if idx % 2 == 0 {
+                            Style::default().bg(Color::Black)
+                        } else {
+                            Style::default().bg(Color::DarkGray)
+                        };
+                        Row::new(row.clone()).style(style)
+                    });
 
                 // Spaltenbreiten dynamisch anpassen
                 let col_count = state.shared.table.headers.len();
@@ -471,6 +494,25 @@ fn widget(
     }
 
     if state.show_file_popup {
+        if state.file_save == Some(FileAction::Save) && !state.file_popup_is_active {
+            state.file_popup_is_active = true;
+            let mut curret_path: String = state.file_textarea.lines().first().unwrap().to_string();
+            let mut save_path: String = String::new();
+            if !curret_path.contains(".sql") {
+                let suggested_filename = format!(
+                    "{}_{}.sql",
+                    "query",
+                    humantime::format_rfc3339_seconds(SystemTime::now())
+                );
+                if std::env::consts::OS == "windows" {
+                    save_path = format!("\\{}", suggested_filename);
+                } else {
+                    save_path = format!("/{}", suggested_filename);
+                }
+                state.file_textarea.move_cursor(CursorMove::End);
+                state.file_textarea.insert_str(&save_path.as_str());
+            }
+        }
         state
             .file_textarea
             .set_cursor_line_style(Style::default().add_modifier(Modifier::UNDERLINED));
@@ -486,7 +528,6 @@ fn widget(
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Thick)
-                .style(Style::default())
                 .title(title),
         );
         frame.render_widget(&state.file_textarea, popup_size);
@@ -498,15 +539,14 @@ fn widget(
         for shortcut in SHORTCUTS {
             helplinetext.push_str(&format!("{}\n", shortcut.to_string()));
         }
-        let help_text = Paragraph::new(helplinetext.clone())
+        let frame_size = frame.size();
+        let help_paragraoh = Text::from(helplinetext);
+        let help_popup = Popup::new(help_paragraoh)
             .style(Style::default().fg(Color::Gray).bg(Color::DarkGray))
-            .block(
-                Block::default()
-                    .title("Help")
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Thick),
-            );
-        frame.render_widget(help_text, popup_size);
+            .title("Help - Shortcuts")
+            .borders(Borders::ALL)
+            .border_set(border::THICK);
+        frame.render_widget(&help_popup, frame_size);
     }
 
     if state.show_help {
@@ -568,11 +608,12 @@ fn widget(
                                     state.db_input = false;
                                     debug!("Exiting DB input mode");
                                 }
-                                _ => {}
+                                _ => {
+                                    state
+                                        .db_textarea
+                                        .input(tui_textarea::Input::from(key_event));
+                                }
                             }
-                            state
-                                .db_textarea
-                                .input(tui_textarea::Input::from(key_event));
                         }
                         Event::Mouse(mouse_event) => {
                             // Handle mouse events if needed
@@ -609,6 +650,7 @@ fn widget(
                                 KeyCode::Esc => {
                                     // Exit DB input mode
                                     state.show_file_popup = false;
+                                    state.file_popup_is_active = false;
                                     debug!("Exiting DB input mode");
                                 }
                                 KeyCode::Enter => {
@@ -643,12 +685,14 @@ fn widget(
                                         }
                                     }
                                     state.show_file_popup = false;
+                                    state.file_popup_is_active = false;
                                 }
-                                _ => {}
+                                _ => {
+                                    state
+                                        .file_textarea
+                                        .input(tui_textarea::Input::from(key_event));
+                                }
                             }
-                            state
-                                .file_textarea
-                                .input(tui_textarea::Input::from(key_event));
                         }
                         Event::Mouse(mouse_event) => {
                             // Handle mouse events if needed

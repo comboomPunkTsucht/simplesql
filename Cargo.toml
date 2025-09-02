@@ -1,6 +1,6 @@
 [package]
 name = "simplesql"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2024"
 description = "simplesql is a modern, lightweight SQL client that runs in either optional Terminal (TUI) or Graphical (GUI) mode. Built for developers, DBAs, and power users who need fast, intuitive access to their databases."
 license = "MIT"
@@ -39,6 +39,7 @@ crossterm = "*"
 edtui = "*"
 tui-logger = "*"
 tui-textarea = { version = "*", features = ["search"] }
+tui-popup = "*"
 chrono = "*"
 # main.rs
 clap = "*"
@@ -46,10 +47,8 @@ clap = "*"
 iced = { version = "*", features = ["default", "highlighter", "tokio", "debug", "wgpu", "markdown", "advanced", "system", "auto-detect-theme"], default-features = false }
 # shared.rs
 sqlx = { version = "*", features = ["runtime-tokio", "tls-rustls-ring-native-roots", "postgres", "mysql", "any", "derive", "macros"] }
-serde = { version = "*", features = ["derive"] }
-toml = "*"
-serde_json = "*"
-json5 = "*"
+serde = { version = "*", features = ["derive", "std"] }
+toml = { version = "*", features = ["preserve_order", "serde"] }
 log = "*"
 fern = "*"
 atty = "*"

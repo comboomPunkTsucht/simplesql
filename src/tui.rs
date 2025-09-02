@@ -4,6 +4,7 @@
 // https://opensource.org/licenses/MIT
 #[allow(unused_imports)]
 use crate::shared;
+use crate::shared::Tab;
 #[allow(unused_imports)]
 use edtui::{
     syntect::parsing::{Scope, SyntaxReference}, EditorEventHandler, EditorState, EditorStatusLine, EditorTheme, EditorView,
@@ -36,13 +37,193 @@ use widgetui::{
     *,
 };
 
+struct AlternativeShortcut {
+    key: KeyCode,
+    modifiers: Option<KeyModifiers>,
+}
+
+struct Shortcut<'a> {
+    key: KeyCode,
+    modifiers: Option<KeyModifiers>,
+    description: &'static str,
+    alternative_shortcut: Option<&'a [AlternativeShortcut]>,
+}
+
+const SHORTCUTS: &[Shortcut<'_>] = &[
+    Shortcut {
+        key: KeyCode::F(1),
+        modifiers: None,
+        description: "Toggle Help Popup",
+        alternative_shortcut: None,
+    },
+    Shortcut {
+        key: KeyCode::F(2),
+        modifiers: None,
+        description: "Select Tab",
+        alternative_shortcut: None,
+    },
+    Shortcut {
+        key: KeyCode::F(3),
+        modifiers: None,
+        description: "Input the Databasename for the Connection",
+        alternative_shortcut: None,
+    },
+    Shortcut {
+        key: KeyCode::F(4),
+        modifiers: None,
+        description: "Select User for the Connection to the Database",
+        alternative_shortcut: None,
+    },
+    Shortcut {
+        key: KeyCode::F(5),
+        modifiers: None,
+        description: "Query the Database",
+        alternative_shortcut: None,
+    },
+    Shortcut {
+        key: KeyCode::F(8),
+        modifiers: None,
+        description: "Export the SQL Statement to a File",
+        alternative_shortcut: None,
+    },
+    Shortcut {
+        key: KeyCode::F(9),
+        modifiers: None,
+        description: "Import a SQL Statement from a File",
+        alternative_shortcut: None,
+    },
+    Shortcut {
+        key: KeyCode::F(12),
+        modifiers: None,
+        description: "Quit",
+        alternative_shortcut: Some(&[
+            AlternativeShortcut {
+                key: KeyCode::Char('c'),
+                modifiers: Some(KeyModifiers::CONTROL),
+            },
+            AlternativeShortcut {
+                key: KeyCode::Char('d'),
+                modifiers: Some(KeyModifiers::CONTROL),
+            },
+        ]),
+    },
+];
+
+impl AlternativeShortcut {
+    #[allow(dead_code)]
+    pub fn to_string(&self) -> String {
+        if let Some(modifiers) = self.modifiers {
+            let mut parts = Vec::new();
+            if modifiers.contains(KeyModifiers::CONTROL) {
+                parts.push("Ctrl".to_string());
+            }
+            if modifiers.contains(KeyModifiers::ALT) {
+                parts.push("Alt".to_string());
+            }
+            if modifiers.contains(KeyModifiers::SHIFT) {
+                parts.push("Shift".to_string());
+            }
+            parts.push(match self.key {
+                KeyCode::F(n) => format!("F{}", n),
+                KeyCode::Char(c) => c.to_string(),
+                KeyCode::Enter => "Enter".to_string(),
+                KeyCode::Esc => "Esc".to_string(),
+                KeyCode::Tab => "Tab".to_string(),
+                KeyCode::Backspace => "Backspace".to_string(),
+                KeyCode::Left => "Left".to_string(),
+                KeyCode::Right => "Right".to_string(),
+                KeyCode::Up => "Up".to_string(),
+                KeyCode::Down => "Down".to_string(),
+                _ => "Other".to_string(),
+            });
+            parts.join("+")
+        } else {
+            match self.key {
+                KeyCode::F(n) => format!("F{}", n),
+                KeyCode::Char(c) => c.to_string(),
+                KeyCode::Enter => "Enter".to_string(),
+                KeyCode::Esc => "Esc".to_string(),
+                KeyCode::Tab => "Tab".to_string(),
+                KeyCode::Backspace => "Backspace".to_string(),
+                KeyCode::Left => "Left".to_string(),
+                KeyCode::Right => "Right".to_string(),
+                KeyCode::Up => "Up".to_string(),
+                KeyCode::Down => "Down".to_string(),
+                _ => "Other".to_string(),
+            }
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn as_str(&self) -> &'static str {
+        Box::leak(self.to_string().into_boxed_str())
+    }
+}
+
+impl Shortcut<'_> {
+    #[allow(dead_code)]
+    pub fn to_string(&self) -> String {
+        let mut parts = Vec::new();
+        if let Some(modifiers) = self.modifiers {
+            if modifiers.contains(KeyModifiers::CONTROL) {
+                parts.push("Ctrl".to_string());
+            }
+            if modifiers.contains(KeyModifiers::ALT) {
+                parts.push("Alt".to_string());
+            }
+            if modifiers.contains(KeyModifiers::SHIFT) {
+                parts.push("Shift".to_string());
+            }
+        }
+        parts.push(match self.key {
+            KeyCode::F(n) => format!("F{}", n),
+            KeyCode::Char(c) => c.to_string(),
+            KeyCode::Enter => "Enter".to_string(),
+            KeyCode::Esc => "Esc".to_string(),
+            KeyCode::Tab => "Tab".to_string(),
+            KeyCode::Backspace => "Backspace".to_string(),
+            KeyCode::Left => "Left".to_string(),
+            KeyCode::Right => "Right".to_string(),
+            KeyCode::Up => "Up".to_string(),
+            KeyCode::Down => "Down".to_string(),
+            _ => "Other".to_string(),
+        });
+        #[allow(unused_assignments)]
+        let mut shortcut: String = String::new();
+        let main_shortcut = parts.join("+");
+        if let Some(alternatives) = self.alternative_shortcut {
+            let alt_strings: Vec<String> = alternatives.iter().map(|alt| alt.to_string()).collect();
+            shortcut = format!("{} ({})", main_shortcut, alt_strings.join(" / "));
+        } else {
+            shortcut = main_shortcut;
+        }
+
+        format!("{} - {}", shortcut, self.description)
+    }
+
+    #[allow(dead_code)]
+    pub fn as_str(&self) -> &'static str {
+        Box::leak(self.to_string().into_boxed_str())
+    }
+}
+
+#[derive(Clone)]
+pub enum FileAction {
+    Save,
+    Load,
+}
+
 #[allow(dead_code)]
 #[derive(Clone, State)]
 pub struct ExtendedAppState {
     pub shared: shared::AppState,
     pub editor_state: EditorState,
-    pub db_imput: bool,
+    pub db_input: bool,
     pub db_textarea: TextArea<'static>,
+    pub file_textarea: TextArea<'static>,
+    pub show_help: bool,
+    pub show_file_popup: bool,
+    pub file_save: Option<FileAction>,
 }
 impl Default for ExtendedAppState {
     fn default() -> Self {
@@ -51,8 +232,19 @@ impl Default for ExtendedAppState {
         ExtendedAppState {
             shared,
             editor_state: EditorState::default(),
-            db_imput: false,
+            db_input: false,
             db_textarea: TextArea::new(lines),
+            file_textarea: TextArea::new(vec![
+                std::env::current_dir()
+                    .unwrap()
+                    .as_os_str()
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+            ]),
+            show_help: false,
+            show_file_popup: false,
+            file_save: None,
         }
     }
 }
@@ -86,13 +278,17 @@ fn widget(
     mut events: ResMut<Events>,
     mut state: ResMut<ExtendedAppState>,
 ) -> WidgetResult {
-    //helplinetext
-    let helplinetext = "F1: SQL Editor | F2: Table View | F3: Imput DB | F4: Select User | F5: Run | F8: Export SQL | F10: Logs | F12: Quit";
-    let min_width: u16 = helplinetext.chars().count() as u16 + 2; // minimum width for the terminal based on help text length
-    let min_height: u16 = 10; // Minimum height for the terminal
+    let min_width: u16 = 115; // minimum width for the terminal based on help text length
+    let min_height: u16 = SHORTCUTS.len() as u16 + 5; // Minimum height for the terminal
 
     // Prüfe die aktuelle Terminal-Größe
     let terminal_size = frame.size();
+    let popup_size = Rect {
+        x: terminal_size.width / 4,
+        y: terminal_size.height / 4,
+        width: terminal_size.width / 2,
+        height: terminal_size.height / 2,
+    };
 
     // Wenn das Terminal zu klein ist, zeige eine Fehlermeldung
     if terminal_size.width < min_width || terminal_size.height < min_height {
@@ -142,14 +338,14 @@ fn widget(
     // Create main layout
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Fill(1),
-            Constraint::Length(3),
-        ])
+        .constraints([Constraint::Length(3), Constraint::Fill(1)])
         .split(frame.size());
 
-    let tab_string = vec!["SQL Editor", "Table View", "Log Viewer"];
+    let tab_string = vec![
+        Tab::SqlEditor.to_string(),
+        Tab::TableView.to_string(),
+        Tab::LogViewer.to_string(),
+    ];
 
     // Create and render tabs
     let tabs = Tabs::new(tab_string)
@@ -193,7 +389,7 @@ fn widget(
             ),
         h0chunks[2],
     );
-    if state.db_imput {
+    if state.db_input {
         activate(&mut state.db_textarea);
     } else {
         inactivate(&mut state.db_textarea);
@@ -274,143 +470,272 @@ fn widget(
         ),
     }
 
-    // Render help bar
-    let help_text = Paragraph::new(helplinetext)
-        .style(Style::default().fg(Color::Gray))
-        .block(
+    if state.show_file_popup {
+        state
+            .file_textarea
+            .set_cursor_line_style(Style::default().add_modifier(Modifier::UNDERLINED));
+        state
+            .file_textarea
+            .set_cursor_style(Style::default().add_modifier(Modifier::REVERSED));
+        let title = match state.file_save {
+            Some(FileAction::Save) => "Save SQL to File",
+            Some(FileAction::Load) => "Load SQL from File",
+            None => "File Action",
+        };
+        state.file_textarea.set_block(
             Block::default()
-                .title("Help")
                 .borders(Borders::ALL)
-                .border_type(BorderType::Thick),
+                .border_type(BorderType::Thick)
+                .style(Style::default())
+                .title(title),
         );
-    frame.render_widget(help_text, chunks[2]);
+        frame.render_widget(&state.file_textarea, popup_size);
+    }
 
-    if state.db_imput {
+    // Render help popup
+    if state.show_help {
+        let mut helplinetext = String::new();
+        for shortcut in SHORTCUTS {
+            helplinetext.push_str(&format!("{}\n", shortcut.to_string()));
+        }
+        let help_text = Paragraph::new(helplinetext.clone())
+            .style(Style::default().fg(Color::Gray).bg(Color::DarkGray))
+            .block(
+                Block::default()
+                    .title("Help")
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Thick),
+            );
+        frame.render_widget(help_text, popup_size);
+    }
+
+    if state.show_help {
         match events.event.clone() {
-            Some(event) => {
-                match event {
-                    Event::Key(key_event) => {
-                        // Handle modifier keys
-                        match key_event.modifiers {
-                            KeyModifiers::CONTROL => match key_event.code {
-                                KeyCode::Char('c') => {
-                                    events.register_exit();
-                                }
-                                KeyCode::Char('d') => {
-                                    events.register_exit();
-                                }
-                                _ => {}
-                            },
-                            _ => {}
-                        }
-                        match key_event.code {
-                            KeyCode::F(12) => {
+            Some(event) => match event {
+                Event::Key(key_event) => {
+                    match key_event.modifiers {
+                        KeyModifiers::CONTROL => match key_event.code {
+                            KeyCode::Char('c') => {
                                 events.register_exit();
                             }
-                            KeyCode::Esc | KeyCode::Enter => {
-                                // Exit DB input mode
-                                state.db_imput = false;
-                                debug!("Exiting DB input mode");
+                            KeyCode::Char('d') => {
+                                events.register_exit();
                             }
                             _ => {}
+                        },
+                        _ => {}
+                    }
+                    match key_event.code {
+                        KeyCode::F(12) => {
+                            events.register_exit();
                         }
-                        state
-                            .db_textarea
-                            .input(tui_textarea::Input::from(key_event));
+                        KeyCode::Esc | KeyCode::F(1) => {
+                            state.show_help = false;
+                            info!("close Help popup");
+                        }
+                        _ => {}
                     }
-                    Event::Mouse(mouse_event) => {
-                        // Handle mouse events if needed
-                        debug!("Mouse event: {:?}", mouse_event);
-                    }
-                    _ => {}
                 }
-            }
+                _ => {}
+            },
             _ => {}
         }
-        state.shared.db = state.db_textarea.lines().join("\n");
     } else {
-        // Handle editor events
-        if let Some(event) = events.event.clone() {
-            EditorEventHandler::default().on_event(event, &mut state.editor_state);
-        }
-        match state.shared.current_tab {
-            shared::Tab::SqlEditor => {
-                state.shared.sql_query = get_editor_lines_as_string(&state);
-            }
-            _ => {}
-        }
-        // new code for handling key events
-        match events.event.clone() {
-            Some(event) => {
-                match event {
-                    // Handle key events
-                    Event::Key(key_event) => {
-                        match key_event.code {
-                            KeyCode::F(12) => {
-                                events.register_exit();
+        if state.db_input {
+            match events.event.clone() {
+                Some(event) => {
+                    match event {
+                        Event::Key(key_event) => {
+                            // Handle modifier keys
+                            match key_event.modifiers {
+                                KeyModifiers::CONTROL => match key_event.code {
+                                    KeyCode::Char('c') => {
+                                        events.register_exit();
+                                    }
+                                    KeyCode::Char('d') => {
+                                        events.register_exit();
+                                    }
+                                    _ => {}
+                                },
+                                _ => {}
                             }
-                            KeyCode::F(1) => {
-                                state.shared.current_tab = shared::Tab::SqlEditor;
-                                info!("Switched to SQL Editor tab");
-                            }
-                            KeyCode::F(2) => {
-                                state.shared.current_tab = shared::Tab::TableView;
-                                info!("Switched to Table View tab");
-                            }
-                            KeyCode::F(3) => {
-                                state.db_imput = !state.db_imput;
-                            }
-                            KeyCode::F(4) => {
-                                state.shared.set_next_user();
-                            }
-                            KeyCode::F(10) => {
-                                state.shared.current_tab = shared::Tab::LogViewer;
-                            }
-                            KeyCode::F(5) => {
-                                if let Err(e) = shared::run_query(&mut state.shared) {
-                                    error!("Error running query: {}", e);
-                                }
-                            }
-                            KeyCode::F(8) => {
-                                // save the current query to a file
-                                let filename = format!(
-                                    "query_{}.sql",
-                                    humantime::format_rfc3339_seconds(SystemTime::now())
-                                );
-                                shared::write_file(
-                                    format!("./{}", filename).as_str(),
-                                    state.shared.sql_query.as_str(),
-                                )
-                                .unwrap();
-                            }
-                            KeyCode::F(9) => {
-                                info!("test to load a query from a file");
-                            }
-                            _ => {}
-                        }
-                        // Handle modifier keys
-                        match key_event.modifiers {
-                            KeyModifiers::CONTROL => match key_event.code {
-                                KeyCode::Char('c') => {
+                            match key_event.code {
+                                KeyCode::F(12) => {
                                     events.register_exit();
                                 }
-                                KeyCode::Char('d') => {
-                                    events.register_exit();
+                                KeyCode::Esc | KeyCode::Enter => {
+                                    // Exit DB input mode
+                                    state.db_input = false;
+                                    debug!("Exiting DB input mode");
                                 }
                                 _ => {}
-                            },
-                            _ => {}
+                            }
+                            state
+                                .db_textarea
+                                .input(tui_textarea::Input::from(key_event));
                         }
+                        Event::Mouse(mouse_event) => {
+                            // Handle mouse events if needed
+                            debug!("Mouse event: {:?}", mouse_event);
+                        }
+                        _ => {}
                     }
-
-                    Event::Mouse(mouse_event) => {
-                        // Handle mouse events if needed
-                        debug!("Mouse event: {:?}", mouse_event);
-                    }
-                    _ => {}
                 }
+                _ => {}
             }
-            _ => {}
+            state.shared.db = state.db_textarea.lines().join("\n");
+        } else if state.show_file_popup {
+            match events.event.clone() {
+                Some(event) => {
+                    match event {
+                        Event::Key(key_event) => {
+                            // Handle modifier keys
+                            match key_event.modifiers {
+                                KeyModifiers::CONTROL => match key_event.code {
+                                    KeyCode::Char('c') => {
+                                        events.register_exit();
+                                    }
+                                    KeyCode::Char('d') => {
+                                        events.register_exit();
+                                    }
+                                    _ => {}
+                                },
+                                _ => {}
+                            }
+                            match key_event.code {
+                                KeyCode::F(12) => {
+                                    events.register_exit();
+                                }
+                                KeyCode::Esc => {
+                                    // Exit DB input mode
+                                    state.show_file_popup = false;
+                                    debug!("Exiting DB input mode");
+                                }
+                                KeyCode::Enter => {
+                                    if let Some(action) = &state.file_save {
+                                        match action {
+                                            FileAction::Save => {
+                                                if let Err(e) = shared::write_file(
+                                                    state.file_textarea.lines().join("\n").as_str(),
+                                                    state.shared.sql_query.as_str(),
+                                                ) {
+                                                    error!("Error saving file: {}", e);
+                                                } else {
+                                                    info!("File saved successfully");
+                                                }
+                                            }
+                                            FileAction::Load => {
+                                                match shared::read_file(
+                                                    state.file_textarea.lines().join("\n").as_str(),
+                                                ) {
+                                                    Ok(content) => {
+                                                        state.shared.sql_query = content;
+                                                        state.editor_state.lines = Lines::from(
+                                                            state.shared.sql_query.clone(),
+                                                        );
+                                                        info!("File loaded successfully");
+                                                    }
+                                                    Err(e) => {
+                                                        error!("Error loading file: {}", e);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    state.show_file_popup = false;
+                                }
+                                _ => {}
+                            }
+                            state
+                                .file_textarea
+                                .input(tui_textarea::Input::from(key_event));
+                        }
+                        Event::Mouse(mouse_event) => {
+                            // Handle mouse events if needed
+                            debug!("Mouse event: {:?}", mouse_event);
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
+        } else {
+            // Handle editor events
+            if let Some(event) = events.event.clone() {
+                EditorEventHandler::default().on_event(event, &mut state.editor_state);
+            }
+            match state.shared.current_tab {
+                shared::Tab::SqlEditor => {
+                    state.shared.sql_query = get_editor_lines_as_string(&state);
+                }
+                _ => {}
+            }
+            // new code for handling key events
+            match events.event.clone() {
+                Some(event) => {
+                    match event {
+                        // Handle key events
+                        Event::Key(key_event) => {
+                            match key_event.code {
+                                KeyCode::F(12) => {
+                                    events.register_exit();
+                                }
+                                KeyCode::F(1) => {
+                                    state.show_help = true;
+                                    info!("show Help popup");
+                                }
+                                KeyCode::F(2) => {
+                                    state.shared.current_tab = state.shared.current_tab.next();
+                                    info!(
+                                        "Switched to tab: {}",
+                                        state.shared.current_tab.to_string()
+                                    );
+                                }
+                                KeyCode::F(3) => {
+                                    state.db_input = !state.db_input;
+                                }
+                                KeyCode::F(4) => {
+                                    state.shared.set_next_user();
+                                }
+                                KeyCode::F(5) => {
+                                    if let Err(e) = shared::run_query(&mut state.shared) {
+                                        error!("Error running query: {}", e);
+                                    }
+                                }
+                                KeyCode::F(8) => {
+                                    state.file_save = Some(FileAction::Save);
+                                    state.show_file_popup = !state.show_file_popup;
+                                }
+                                KeyCode::F(9) => {
+                                    state.file_save = Some(FileAction::Load);
+                                    state.show_file_popup = !state.show_file_popup;
+                                }
+                                _ => {}
+                            }
+                            // Handle modifier keys
+                            match key_event.modifiers {
+                                KeyModifiers::CONTROL => match key_event.code {
+                                    KeyCode::Char('c') => {
+                                        events.register_exit();
+                                    }
+                                    KeyCode::Char('d') => {
+                                        events.register_exit();
+                                    }
+                                    _ => {}
+                                },
+                                _ => {}
+                            }
+                        }
+
+                        Event::Mouse(mouse_event) => {
+                            // Handle mouse events if needed
+                            debug!("Mouse event: {:?}", mouse_event);
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
         }
     }
 

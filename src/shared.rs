@@ -9,10 +9,10 @@ use serde::*;
 use serde_json::*;
 #[allow(unused_imports)]
 use sqlx::{
-  any::{AnyPoolOptions, AnyQueryResult, AnyRow}, mysql::{MySqlPoolOptions, MySqlQueryResult, MySqlRow}, postgres::{PgPoolOptions, PgQueryResult, PgRow}, Any, Column,
-  MySql,
-  Postgres,
-  Row,
+    any::{AnyPoolOptions, AnyQueryResult, AnyRow}, mysql::{MySqlPoolOptions, MySqlQueryResult, MySqlRow}, postgres::{PgPoolOptions, PgQueryResult, PgRow}, Any, Column,
+    MySql,
+    Postgres,
+    Row,
 };
 use std::ops::Deref;
 use std::path::Path;
@@ -20,10 +20,10 @@ use std::path::Path;
 use std::time::SystemTime;
 #[allow(unused_imports)]
 use std::{
-  fs,
-  fs::{create_dir_all, remove_dir_all, remove_file, File},
-  io::{Read, Write},
-  result::Result,
+    fs,
+    fs::{create_dir_all, remove_dir_all, remove_file, File},
+    io::{Read, Write},
+    result::Result,
 };
 use toml::*;
 use tui_logger::TuiLoggerFile;
@@ -59,6 +59,26 @@ impl Tab {
             Tab::TableView => 1,
             Tab::LogViewer => 2,
         }
+    }
+    #[allow(dead_code)]
+    pub fn next(self) -> Self {
+        match self {
+            Tab::SqlEditor => Tab::TableView,
+            Tab::TableView => Tab::LogViewer,
+            Tab::LogViewer => Tab::SqlEditor,
+        }
+    }
+    #[allow(dead_code)]
+    pub fn to_string(self) -> String {
+        match self {
+            Tab::SqlEditor => "SQL Editor".to_string(),
+            Tab::TableView => "Table View".to_string(),
+            Tab::LogViewer => "Log Viewer".to_string(),
+        }
+    }
+    #[allow(dead_code)]
+    pub fn as_str(self) -> &'static str {
+        Box::leak(self.to_string().into_boxed_str())
     }
 }
 #[allow(dead_code)]

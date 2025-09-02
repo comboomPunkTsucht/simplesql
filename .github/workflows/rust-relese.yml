@@ -84,7 +84,7 @@ jobs:
 
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
-            os-name: linux
+            os-name: linux-musl
             arch: x86_64
 
           - target: aarch64-unknown-linux-gnu
@@ -94,7 +94,7 @@ jobs:
 
           - target: aarch64-unknown-linux-musl
             os: ubuntu-latest
-            os-name: linux
+            os-name: linux-musl
             arch: aarch64
 
             # Windows targets

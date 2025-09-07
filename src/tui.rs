@@ -496,7 +496,9 @@ fn widget(
     if state.show_file_popup {
         if state.file_save == Some(FileAction::Save) && !state.file_popup_is_active {
             state.file_popup_is_active = true;
+            #[allow(unused_assignments, unused_mut)]
             let mut curret_path: String = state.file_textarea.lines().first().unwrap().to_string();
+            #[allow(unused_assignments, unused_mut)]
             let mut save_path: String = String::new();
             if !curret_path.contains(".sql") {
                 let suggested_filename = format!(

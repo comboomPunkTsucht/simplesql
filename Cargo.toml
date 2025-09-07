@@ -44,7 +44,15 @@ chrono = "*"
 # main.rs
 clap = "*"
 # gui.rs
-iced = { version = "*", features = ["default", "highlighter", "tokio", "debug", "wgpu", "markdown", "advanced", "system", "auto-detect-theme"], default-features = false }
+#iced = { version = "*", features = ["default", "highlighter", "tokio", "debug", "wgpu", "markdown", "advanced", "system", "auto-detect-theme"], default-features = false }
+egui = { version = "*", features = ["serde", "log", "color-hex", "persistence", "deadlock_detection", "document-features"] }
+eframe = "*"
+egui_extras = "*"
+egui_dock = "*"
+egui-file-dialog = "*"
+egui_hotkey = "*"
+egui_code_editor = { version = "*", features = ["editor", "egui"] }
+colorful = "*"
 # shared.rs
 sqlx = { version = "*", features = ["runtime-tokio", "tls-rustls-ring-native-roots", "postgres", "mysql", "any", "derive", "macros"] }
 serde = { version = "*", features = ["derive", "std"] }
@@ -54,4 +62,5 @@ fern = "*"
 atty = "*"
 humantime = "*"
 tokio = { version = "*", features = ["rt", "rt-multi-thread", "macros"] }
+ctx = "0.2.0"
 

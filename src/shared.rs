@@ -2,6 +2,7 @@
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
+use log::Log;
 #[cfg(test)]
 use serde::*;
 #[allow(unused_imports)]
@@ -285,7 +286,7 @@ fn get_config() -> Config {
     config
 }
 
-fn get_config_base_path() -> String {
+pub fn get_config_base_path() -> String {
     match std::env::consts::OS {
         "linux" | "macos" | "freebsd" => {
             format!("{}/.simplesql", std::env::var("HOME").unwrap())

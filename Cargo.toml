@@ -32,13 +32,13 @@ default = [
 # macOS-specific dependencies would go here
 
 [dependencies]
-# tui.rs
-ratatui = "*"
-crossterm = "*"
-edtui = "*"
-tui-logger = "*"
-tui-textarea = { version = "*", features = ["search"] }
-tui-popup = "*"
+# tui.rs — all pinned to ratatui 0.28 compatible versions
+ratatui = { version = "0.28", features = ["crossterm"] }
+crossterm = "0.28"
+edtui = "0.8.3"
+tui-logger = { version = "0.12.1", features = ["crossterm"] }
+tui-textarea = { version = "0.6.1", features = ["search"] }
+tui-popup = "0.5.0"
 chrono = "*"
 # main.rs
 clap = "*"

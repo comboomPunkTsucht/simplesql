@@ -5,3 +5,4 @@
 Cargo.lock
 /.simplesql
 *.sql
+.DS_Store

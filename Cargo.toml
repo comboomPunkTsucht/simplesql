@@ -1,6 +1,6 @@
 [package]
 name = "simplesql"
-version = "0.0.6"
+version = "0.0.7"
 edition = "2024"
 description = "simplesql is a modern, lightweight SQL client that runs in either optional Terminal (TUI) or Graphical (GUI) mode. Built for developers, DBAs, and power users who need fast, intuitive access to their databases."
 license = "MIT"
@@ -33,33 +33,21 @@ default = [
 
 [dependencies]
 # tui.rs
-ratatui = "0.29.0"
-widgetui = "0.7.1"
-crossterm = "0.28.1"
-edtui = "0.9.6"
-tui-logger = "0.17.3"
-tui-textarea = { version = "0.7.0", features = ["search"] }
-tui-popup = "0.6.0"
-chrono = "0.4.41"
+ratatui = "*"
+crossterm = "*"
+edtui = "*"
+tui-logger = "*"
+tui-textarea = { version = "*", features = ["search"] }
+tui-popup = "*"
+chrono = "*"
 # main.rs
-clap = "4.5.38"
-# gui.rs
-#iced = { version = "*", features = ["default", "highlighter", "tokio", "debug", "wgpu", "markdown", "advanced", "system", "auto-detect-theme"], default-features = false }
-egui = { version = "0.32.3", features = ["serde", "log", "color-hex", "persistence", "deadlock_detection", "document-features"] }
-eframe = "0.32.2"
-egui_extras = "0.32.2"
-egui_dock = "0.17.0"
-egui-file-dialog = "0.11.0"
-# egui_hotkey = "*"
-egui_code_editor = { version = "0.2.17", features = ["editor", "egui"] }
-colorful = "*"
+clap = "*"
 # shared.rs
-sqlx = { version = "0.8.6", features = ["runtime-tokio", "tls-rustls-ring-native-roots", "postgres", "mysql", "any", "derive", "macros", "chrono"] }
-serde = { version = "1.0.219", features = ["derive", "std"] }
-toml = { version = "0.9.5", features = ["preserve_order", "serde"] }
-log = "0.4.27"
-fern = "0.7.1"
-atty = "0.2.14"
-humantime = "2.2.0"
-tokio = { version = "1.45.0", features = ["rt", "rt-multi-thread", "macros"] }
-ctx = "0.2.0"
+sqlx = { version = "*", features = ["runtime-tokio", "tls-rustls-ring-native-roots", "postgres", "mysql", "any", "derive", "macros", "chrono"] }
+serde = { version = "*", features = ["derive", "std"] }
+toml = { version = "*", features = ["preserve_order", "serde"] }
+log = "*"
+fern = "*"
+atty = "*"
+humantime = "*"
+tokio = { version = "*", features = ["rt", "rt-multi-thread", "macros"] }

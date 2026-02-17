@@ -24,8 +24,12 @@ use std::time::SystemTime;
 use tui_logger::{TuiLoggerLevelOutput, TuiLoggerSmartWidget, TuiLoggerWidget};
 use tui_popup::Popup;
 use tui_textarea::{CursorMove, TextArea};
-#[allow(unused_imports)]
-use widgetui::ratatui::{
+
+use crossterm::event::{
+    Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers, ModifierKeyCode,
+    MouseEvent,
+};
+use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     prelude::*,
     style::{Color, Modifier, Style, Stylize},
@@ -34,14 +38,6 @@ use widgetui::ratatui::{
         Block, BorderType, Borders, Cell, Paragraph, Row, Scrollbar, ScrollbarOrientation,
         ScrollbarState, Table, TableState, Tabs, Wrap,
     },
-};
-#[allow(unused_imports)]
-use widgetui::{
-    crossterm::event::{
-        Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers, ModifierKeyCode,
-        MouseEvent,
-    },
-    *,
 };
 
 struct AlternativeShortcut {
@@ -221,7 +217,7 @@ pub enum FileAction {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, State)]
+#[derive(Clone)]
 pub struct ExtendedAppState {
     pub shared: shared::AppState,
     pub editor_state: EditorState,
@@ -298,16 +294,13 @@ impl PartialEq for FileAction {
     }
 }
 
-fn widget(
-    mut frame: ResMut<widgetui::WidgetFrame>,
-    mut events: ResMut<Events>,
-    mut state: ResMut<ExtendedAppState>,
-) -> WidgetResult {
-    let min_width: u16 = 115; // minimum width for the terminal based on help text length
-    let min_height: u16 = SHORTCUTS.len() as u16 + 5; // Minimum height for the terminal
+// ── Rendering ─────────────────────────────────────────────────────────────
 
-    // Prüfe die aktuelle Terminal-Größe
-    let terminal_size = frame.size();
+fn ui(frame: &mut ratatui::Frame, state: &mut ExtendedAppState) {
+    let min_width: u16 = 115;
+    let min_height: u16 = SHORTCUTS.len() as u16 + 5;
+
+    let terminal_size = frame.area();
     let popup_size = Rect {
         x: (terminal_size.width * 10u16) / 100u16,
         y: terminal_size.height / 4,
@@ -315,7 +308,7 @@ fn widget(
         height: 3,
     };
 
-    // Wenn das Terminal zu klein ist, zeige eine Fehlermeldung
+    // If terminal too small, show error
     if terminal_size.width < min_width || terminal_size.height < min_height {
         let error_msg = format!(
             "Terminal too small!\nAt least {}x{} required\nCurrent: {}x{}",
@@ -337,34 +330,14 @@ fn widget(
                 ),
             terminal_size,
         );
-
-        match events.event.clone() {
-            Some(event) => match event {
-                Event::Key(key_event) => match key_event.modifiers {
-                    KeyModifiers::CONTROL => match key_event.code {
-                        KeyCode::Char('c') => {
-                            events.register_exit();
-                        }
-                        KeyCode::Char('d') => {
-                            events.register_exit();
-                        }
-                        _ => {}
-                    },
-                    _ => {}
-                },
-                _ => {}
-            },
-            _ => {}
-        }
-
-        return Ok(());
+        return;
     }
 
     // Create main layout
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(3), Constraint::Fill(1)])
-        .split(frame.size());
+        .split(frame.area());
 
     let tab_string = vec![
         Tab::SqlEditor.to_string(),
@@ -445,9 +418,7 @@ fn widget(
                     chunks[1],
                 );
             } else {
-                // Header-Zeile
-                // Determine visible area
-                // 1. Render Outer Block
+                // Header row
                 let block = Block::default()
                     .title("Table View")
                     .borders(Borders::ALL)
@@ -455,21 +426,15 @@ fn widget(
                 frame.render_widget(block, chunks[1]);
                 let inner_area = chunks[1].inner(ratatui::layout::Margin::new(1, 1));
 
-                // 2. Determine Layout & Scroll flags
-                // Initial assumption: No horizontal scrollbar yet, checking vertical
-                // Note: Table header takes 1 row.
                 let max_rows_visible = inner_area.height.saturating_sub(1) as usize;
                 let has_vertical_scroll = table.rows.len() > max_rows_visible;
                 let v_scroll_width = if has_vertical_scroll { 1 } else { 0 };
 
                 let available_width = inner_area.width.saturating_sub(v_scroll_width);
 
-                // Spaltenbreiten berechnen (Header + Data sampling)
-                // Initialize with header widths
                 let mut max_widths: Vec<u16> =
                     table.headers.iter().map(|h| h.len() as u16).collect();
 
-                // Check first 100 rows to adjust widths based on content
                 for row in table.rows.iter().take(100) {
                     for (i, cell) in row.iter().enumerate() {
                         if i < max_widths.len() {
@@ -478,13 +443,9 @@ fn widget(
                     }
                 }
 
-                // Apply padding and clamping
-                let all_col_widths: Vec<u16> = max_widths
-                    .iter()
-                    .map(|&w| (w + 2).clamp(5, 30)) // Min 5, Max 30, Padding 2
-                    .collect();
+                let all_col_widths: Vec<u16> =
+                    max_widths.iter().map(|&w| (w + 2).clamp(5, 30)).collect();
 
-                // Determine visible columns based on available width
                 let mut current_width = 0;
                 let mut visible_cols_end_idx = state.table_col_offset;
 
@@ -504,7 +465,6 @@ fn widget(
                     visible_cols_end_idx < table.headers.len() || state.table_col_offset > 0;
                 let h_scroll_height = if has_horizontal_scroll { 1 } else { 0 };
 
-                // Final Table Area
                 let table_area = Rect {
                     x: inner_area.x,
                     y: inner_area.y,
@@ -512,10 +472,8 @@ fn widget(
                     height: inner_area.height.saturating_sub(h_scroll_height),
                 };
 
-                // 3. Update State (Scrolling)
-                let content_height = table_area.height.saturating_sub(1) as usize; // -1 for Header
+                let content_height = table_area.height.saturating_sub(1) as usize;
 
-                // Adjust scrolling if selection moved out of view
                 if state.table_selected < state.table_offset {
                     state.table_offset = state.table_selected;
                 } else if state.table_selected >= state.table_offset + content_height {
@@ -528,11 +486,9 @@ fn widget(
                 let start_index = state.table_offset;
                 let end_index = (start_index + content_height).min(table.rows.len());
 
-                // Construct Headers for visible columns
                 let visible_headers = &table.headers[state.table_col_offset..visible_cols_end_idx];
                 let header = Row::new(visible_headers.iter().map(|s| s.as_str()));
 
-                // Construct Rows for visible columns
                 let rows =
                     table.rows[start_index..end_index]
                         .iter()
@@ -546,8 +502,6 @@ fn widget(
                                 .take(visible_cols_end_idx - state.table_col_offset)
                                 .map(|(col_idx, s)| {
                                     let width = all_col_widths[col_idx] as usize;
-                                    // Truncate logic: if content > width, truncate and add ellipsis
-                                    // We use width.saturating_sub(1) to fit the ellipsis.
                                     if s.chars().count() > width {
                                         let mut truncated: String =
                                             s.chars().take(width.saturating_sub(1)).collect();
@@ -567,37 +521,33 @@ fn widget(
                             Row::new(visible_cells).style(style)
                         });
 
-                // Spaltenbreiten für gerenderte Tabelle
                 let col_widths: Vec<Constraint> = all_col_widths
                     [state.table_col_offset..visible_cols_end_idx]
                     .iter()
                     .map(|&w| Constraint::Length(w))
                     .collect();
 
-                // 4. Render Table
                 frame.render_widget(
                     Table::default()
                         .rows(rows)
                         .header(header)
-                        // No Block here, outer block rendered already
                         .cell_highlight_style(Style::default().fg(Color::White))
                         .row_highlight_style(Style::default().fg(Color::Black).bg(Color::White))
                         .widths(&col_widths),
                     table_area,
                 );
 
-                // 5. Render Scrollbars
                 if has_vertical_scroll {
                     draw_custom_scrollbar(
-                        &mut frame,
+                        frame,
                         Rect {
                             x: table_area.right(),
-                            y: table_area.y, // content start, including header? Layout matches table_area
+                            y: table_area.y,
                             width: 1,
-                            height: table_area.height, // scrollbar matches table height (including header area)
+                            height: table_area.height,
                         },
                         table.rows.len(),
-                        content_height, // viewport is rows capacity
+                        content_height,
                         state.table_offset,
                         ScrollbarOrientation::VerticalRight,
                     );
@@ -605,7 +555,7 @@ fn widget(
 
                 if has_horizontal_scroll {
                     draw_custom_scrollbar(
-                        &mut frame,
+                        frame,
                         Rect {
                             x: table_area.x,
                             y: table_area.bottom(),
@@ -687,7 +637,7 @@ fn widget(
         for shortcut in SHORTCUTS {
             helplinetext.push_str(&format!("{}\n", shortcut.to_string()));
         }
-        let frame_size = frame.size();
+        let frame_size = frame.area();
         let help_paragraoh = Text::from(helplinetext);
         let help_popup = Popup::new(help_paragraoh)
             .style(Style::default().fg(Color::Gray).bg(Color::DarkGray))
@@ -696,296 +646,284 @@ fn widget(
             .border_set(border::THICK);
         frame.render_widget(&help_popup, frame_size);
     }
+}
+
+// ── Event handling ────────────────────────────────────────────────────────
+
+/// Returns `true` if the app should quit.
+fn handle_event(event: Event, state: &mut ExtendedAppState) -> bool {
+    let terminal_size = crossterm::terminal::size().unwrap_or((0, 0));
+    let min_width: u16 = 115;
+    let min_height: u16 = SHORTCUTS.len() as u16 + 5;
+
+    // If terminal too small, only allow quit
+    if terminal_size.0 < min_width || terminal_size.1 < min_height {
+        if let Event::Key(key_event) = event {
+            if key_event.modifiers == KeyModifiers::CONTROL {
+                match key_event.code {
+                    KeyCode::Char('c') | KeyCode::Char('d') => return true,
+                    _ => {}
+                }
+            }
+        }
+        return false;
+    }
 
     if state.show_help {
-        match events.event.clone() {
-            Some(event) => match event {
-                Event::Key(key_event) => {
-                    match key_event.modifiers {
-                        KeyModifiers::CONTROL => match key_event.code {
-                            KeyCode::Char('c') => {
-                                events.register_exit();
-                            }
-                            KeyCode::Char('d') => {
-                                events.register_exit();
-                            }
-                            _ => {}
-                        },
-                        _ => {}
-                    }
+        if let Event::Key(key_event) = event {
+            if key_event.modifiers == KeyModifiers::CONTROL {
+                match key_event.code {
+                    KeyCode::Char('c') | KeyCode::Char('d') => return true,
+                    _ => {}
+                }
+            }
+            match key_event.code {
+                KeyCode::F(12) => return true,
+                KeyCode::Esc | KeyCode::F(1) => {
+                    state.show_help = false;
+                    info!("close Help popup");
+                }
+                _ => {}
+            }
+        }
+    } else if state.db_input {
+        match event {
+            Event::Key(key_event) => {
+                if key_event.modifiers == KeyModifiers::CONTROL {
                     match key_event.code {
-                        KeyCode::F(12) => {
-                            events.register_exit();
-                        }
-                        KeyCode::Esc | KeyCode::F(1) => {
-                            state.show_help = false;
-                            info!("close Help popup");
-                        }
+                        KeyCode::Char('c') | KeyCode::Char('d') => return true,
                         _ => {}
                     }
                 }
-                _ => {}
-            },
+                match key_event.code {
+                    KeyCode::F(12) => return true,
+                    KeyCode::Esc | KeyCode::Enter => {
+                        state.db_input = false;
+                        debug!("Exiting DB input mode");
+                    }
+                    _ => {
+                        state
+                            .db_textarea
+                            .input(tui_textarea::Input::from(key_event));
+                    }
+                }
+            }
+            Event::Mouse(mouse_event) => {
+                debug!("Mouse event: {:?}", mouse_event);
+            }
+            _ => {}
+        }
+        state.shared.db = state.db_textarea.lines().join("\n");
+    } else if state.show_file_popup {
+        match event {
+            Event::Key(key_event) => {
+                if key_event.modifiers == KeyModifiers::CONTROL {
+                    match key_event.code {
+                        KeyCode::Char('c') | KeyCode::Char('d') => return true,
+                        _ => {}
+                    }
+                }
+                match key_event.code {
+                    KeyCode::F(12) => return true,
+                    KeyCode::Esc => {
+                        state.show_file_popup = false;
+                        state.file_popup_is_active = false;
+                        debug!("Exiting DB input mode");
+                    }
+                    KeyCode::Enter => {
+                        if let Some(action) = &state.file_save {
+                            match action {
+                                FileAction::Save => {
+                                    if let Err(e) = shared::write_file(
+                                        state.file_textarea.lines().join("\n").as_str(),
+                                        state.shared.sql_query.as_str(),
+                                    ) {
+                                        error!("Error saving file: {}", e);
+                                    } else {
+                                        info!("File saved successfully");
+                                    }
+                                }
+                                FileAction::Load => {
+                                    match shared::read_file(
+                                        state.file_textarea.lines().join("\n").as_str(),
+                                    ) {
+                                        Ok(content) => {
+                                            state.shared.sql_query = content;
+                                            state.editor_state.lines =
+                                                Lines::from(state.shared.sql_query.clone());
+                                            info!("File loaded successfully");
+                                        }
+                                        Err(e) => {
+                                            error!("Error loading file: {}", e);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        state.show_file_popup = false;
+                        state.file_popup_is_active = false;
+                    }
+                    _ => {
+                        state
+                            .file_textarea
+                            .input(tui_textarea::Input::from(key_event));
+                    }
+                }
+            }
+            Event::Mouse(mouse_event) => {
+                debug!("Mouse event: {:?}", mouse_event);
+            }
             _ => {}
         }
     } else {
-        if state.db_input {
-            match events.event.clone() {
-                Some(event) => {
-                    match event {
-                        Event::Key(key_event) => {
-                            // Handle modifier keys
-                            match key_event.modifiers {
-                                KeyModifiers::CONTROL => match key_event.code {
-                                    KeyCode::Char('c') => {
-                                        events.register_exit();
-                                    }
-                                    KeyCode::Char('d') => {
-                                        events.register_exit();
-                                    }
-                                    _ => {}
-                                },
-                                _ => {}
-                            }
-                            match key_event.code {
-                                KeyCode::F(12) => {
-                                    events.register_exit();
-                                }
-                                KeyCode::Esc | KeyCode::Enter => {
-                                    // Exit DB input mode
-                                    state.db_input = false;
-                                    debug!("Exiting DB input mode");
-                                }
-                                _ => {
-                                    state
-                                        .db_textarea
-                                        .input(tui_textarea::Input::from(key_event));
+        // Handle editor events
+        EditorEventHandler::default().on_event(event.clone(), &mut state.editor_state);
+        match state.shared.current_tab {
+            shared::Tab::SqlEditor => {
+                state.shared.sql_query = get_editor_lines_as_string(&state);
+            }
+            _ => {}
+        }
+        // Handle key events
+        match event {
+            Event::Key(key_event) => {
+                match key_event.code {
+                    KeyCode::F(12) => return true,
+                    KeyCode::F(1) => {
+                        state.show_help = true;
+                        info!("show Help popup");
+                    }
+                    KeyCode::F(2) => {
+                        state.shared.current_tab = state.shared.current_tab.next();
+                        info!("Switched to tab: {}", state.shared.current_tab.to_string());
+                    }
+                    KeyCode::F(3) => {
+                        state.db_input = !state.db_input;
+                    }
+                    KeyCode::F(4) => {
+                        state.shared.set_next_user();
+                    }
+                    KeyCode::F(5) => {
+                        if let Err(e) = shared::run_query(&mut state.shared) {
+                            error!("Error running query: {}", e);
+                        }
+                    }
+                    KeyCode::F(8) => {
+                        state.file_save = Some(FileAction::Save);
+                        state.show_file_popup = !state.show_file_popup;
+                    }
+                    KeyCode::F(9) => {
+                        state.file_save = Some(FileAction::Load);
+                        state.show_file_popup = !state.show_file_popup;
+                    }
+                    KeyCode::Down => {
+                        if state.shared.current_tab == shared::Tab::TableView {
+                            let table_len = state.shared.table.lock().unwrap().rows.len();
+                            if table_len > 0 {
+                                if state.table_selected < table_len - 1 {
+                                    state.table_selected += 1;
+                                } else {
+                                    state.table_selected = 0;
                                 }
                             }
                         }
-                        Event::Mouse(mouse_event) => {
-                            // Handle mouse events if needed
-                            debug!("Mouse event: {:?}", mouse_event);
+                    }
+                    KeyCode::Up => {
+                        if state.shared.current_tab == shared::Tab::TableView {
+                            let table_len = state.shared.table.lock().unwrap().rows.len();
+                            if table_len > 0 {
+                                if state.table_selected > 0 {
+                                    state.table_selected -= 1;
+                                } else {
+                                    state.table_selected = table_len - 1;
+                                }
+                            }
                         }
+                    }
+                    KeyCode::Right => {
+                        if state.shared.current_tab == shared::Tab::TableView {
+                            let table_headers_len =
+                                state.shared.table.lock().unwrap().headers.len();
+                            if state.table_col_offset < table_headers_len.saturating_sub(1) {
+                                state.table_col_offset += 1;
+                            }
+                        }
+                    }
+                    KeyCode::Left => {
+                        if state.shared.current_tab == shared::Tab::TableView {
+                            if state.table_col_offset > 0 {
+                                state.table_col_offset -= 1;
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+                // Handle modifier keys
+                if key_event.modifiers == KeyModifiers::CONTROL {
+                    match key_event.code {
+                        KeyCode::Char('c') | KeyCode::Char('d') => return true,
                         _ => {}
                     }
                 }
-                _ => {}
             }
-            state.shared.db = state.db_textarea.lines().join("\n");
-        } else if state.show_file_popup {
-            match events.event.clone() {
-                Some(event) => {
-                    match event {
-                        Event::Key(key_event) => {
-                            // Handle modifier keys
-                            match key_event.modifiers {
-                                KeyModifiers::CONTROL => match key_event.code {
-                                    KeyCode::Char('c') => {
-                                        events.register_exit();
-                                    }
-                                    KeyCode::Char('d') => {
-                                        events.register_exit();
-                                    }
-                                    _ => {}
-                                },
-                                _ => {}
-                            }
-                            match key_event.code {
-                                KeyCode::F(12) => {
-                                    events.register_exit();
-                                }
-                                KeyCode::Esc => {
-                                    // Exit DB input mode
-                                    state.show_file_popup = false;
-                                    state.file_popup_is_active = false;
-                                    debug!("Exiting DB input mode");
-                                }
-                                KeyCode::Enter => {
-                                    if let Some(action) = &state.file_save {
-                                        match action {
-                                            FileAction::Save => {
-                                                if let Err(e) = shared::write_file(
-                                                    state.file_textarea.lines().join("\n").as_str(),
-                                                    state.shared.sql_query.as_str(),
-                                                ) {
-                                                    error!("Error saving file: {}", e);
-                                                } else {
-                                                    info!("File saved successfully");
-                                                }
-                                            }
-                                            FileAction::Load => {
-                                                match shared::read_file(
-                                                    state.file_textarea.lines().join("\n").as_str(),
-                                                ) {
-                                                    Ok(content) => {
-                                                        state.shared.sql_query = content;
-                                                        state.editor_state.lines = Lines::from(
-                                                            state.shared.sql_query.clone(),
-                                                        );
-                                                        info!("File loaded successfully");
-                                                    }
-                                                    Err(e) => {
-                                                        error!("Error loading file: {}", e);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    state.show_file_popup = false;
-                                    state.file_popup_is_active = false;
-                                }
-                                _ => {
-                                    state
-                                        .file_textarea
-                                        .input(tui_textarea::Input::from(key_event));
-                                }
-                            }
-                        }
-                        Event::Mouse(mouse_event) => {
-                            // Handle mouse events if needed
-                            debug!("Mouse event: {:?}", mouse_event);
-                        }
-                        _ => {}
-                    }
-                }
-                _ => {}
-            }
-        } else {
-            // Handle editor events
-            if let Some(event) = events.event.clone() {
-                EditorEventHandler::default().on_event(event, &mut state.editor_state);
-            }
-            match state.shared.current_tab {
-                shared::Tab::SqlEditor => {
-                    state.shared.sql_query = get_editor_lines_as_string(&state);
-                }
-                _ => {}
-            }
-            // new code for handling key events
-            match events.event.clone() {
-                Some(event) => {
-                    match event {
-                        // Handle key events
-                        Event::Key(key_event) => {
-                            match key_event.code {
-                                KeyCode::F(12) => {
-                                    events.register_exit();
-                                }
-                                KeyCode::F(1) => {
-                                    state.show_help = true;
-                                    info!("show Help popup");
-                                }
-                                KeyCode::F(2) => {
-                                    state.shared.current_tab = state.shared.current_tab.next();
-                                    info!(
-                                        "Switched to tab: {}",
-                                        state.shared.current_tab.to_string()
-                                    );
-                                }
-                                KeyCode::F(3) => {
-                                    state.db_input = !state.db_input;
-                                }
-                                KeyCode::F(4) => {
-                                    state.shared.set_next_user();
-                                }
-                                KeyCode::F(5) => {
-                                    if let Err(e) = shared::run_query(&mut state.shared) {
-                                        error!("Error running query: {}", e);
-                                    }
-                                }
-                                KeyCode::F(8) => {
-                                    state.file_save = Some(FileAction::Save);
-                                    state.show_file_popup = !state.show_file_popup;
-                                }
-                                KeyCode::F(9) => {
-                                    state.file_save = Some(FileAction::Load);
-                                    state.show_file_popup = !state.show_file_popup;
-                                }
-                                KeyCode::Down => {
-                                    if state.shared.current_tab == shared::Tab::TableView {
-                                        let table_len =
-                                            state.shared.table.lock().unwrap().rows.len();
-                                        if table_len > 0 {
-                                            if state.table_selected < table_len - 1 {
-                                                state.table_selected += 1;
-                                            } else {
-                                                state.table_selected = 0;
-                                            }
-                                        }
-                                    }
-                                }
-                                KeyCode::Up => {
-                                    if state.shared.current_tab == shared::Tab::TableView {
-                                        let table_len =
-                                            state.shared.table.lock().unwrap().rows.len();
-                                        if table_len > 0 {
-                                            if state.table_selected > 0 {
-                                                state.table_selected -= 1;
-                                            } else {
-                                                state.table_selected = table_len - 1;
-                                            }
-                                        }
-                                    }
-                                }
-                                KeyCode::Right => {
-                                    if state.shared.current_tab == shared::Tab::TableView {
-                                        let table_headers_len =
-                                            state.shared.table.lock().unwrap().headers.len();
-                                        if state.table_col_offset
-                                            < table_headers_len.saturating_sub(1)
-                                        {
-                                            state.table_col_offset += 1;
-                                        }
-                                    }
-                                }
-                                KeyCode::Left => {
-                                    if state.shared.current_tab == shared::Tab::TableView {
-                                        if state.table_col_offset > 0 {
-                                            state.table_col_offset -= 1;
-                                        }
-                                    }
-                                }
-                                _ => {}
-                            }
-                            // Handle modifier keys
-                            match key_event.modifiers {
-                                KeyModifiers::CONTROL => match key_event.code {
-                                    KeyCode::Char('c') => {
-                                        events.register_exit();
-                                    }
-                                    KeyCode::Char('d') => {
-                                        events.register_exit();
-                                    }
-                                    _ => {}
-                                },
-                                _ => {}
-                            }
-                        }
 
-                        Event::Mouse(mouse_event) => {
-                            // Handle mouse events if needed
-                            debug!("Mouse event: {:?}", mouse_event);
-                        }
-                        _ => {}
-                    }
-                }
-                _ => {}
+            Event::Mouse(mouse_event) => {
+                debug!("Mouse event: {:?}", mouse_event);
+            }
+            _ => {}
+        }
+    }
+
+    false
+}
+
+// ── Entry point ───────────────────────────────────────────────────────────
+
+pub fn main_tui(file_content: String) -> Result<(), Box<dyn Error>> {
+    // Terminal init
+    crossterm::terminal::enable_raw_mode()?;
+    let mut stdout = std::io::stdout();
+    crossterm::execute!(
+        stdout,
+        crossterm::terminal::EnterAlternateScreen,
+        crossterm::event::EnableMouseCapture
+    )?;
+    let backend = ratatui::backend::CrosstermBackend::new(stdout);
+    let mut terminal = ratatui::Terminal::new(backend)?;
+
+    // App state
+    let mut state = ExtendedAppState::default();
+    if !file_content.is_empty() {
+        state.shared.sql_query = file_content;
+    }
+
+    let tick_rate = std::time::Duration::from_millis(100);
+
+    loop {
+        terminal.draw(|frame| {
+            ui(frame, &mut state);
+        })?;
+
+        if crossterm::event::poll(tick_rate)? {
+            let event = crossterm::event::read()?;
+            if handle_event(event, &mut state) {
+                break;
             }
         }
     }
 
+    // Restore terminal
+    crossterm::terminal::disable_raw_mode()?;
+    crossterm::execute!(
+        terminal.backend_mut(),
+        crossterm::terminal::LeaveAlternateScreen,
+        crossterm::event::DisableMouseCapture
+    )?;
+    terminal.show_cursor()?;
     Ok(())
 }
 
-pub fn main_tui(file_content: String) -> Result<(), Box<dyn Error>> {
-    // Initialize the application state
-    let mut app_state = ExtendedAppState::default();
-    if !file_content.is_empty() {
-        app_state.shared.sql_query = file_content;
-    }
-    Ok(App::new(100)?.widgets(widget).states(app_state).run()?)
-}
+// ── Theme ─────────────────────────────────────────────────────────────────
 
 #[derive(Default)]
 pub struct Theme<'a> {
@@ -1024,23 +962,16 @@ pub fn get_editor_lines_as_string(state: &ExtendedAppState) -> String {
         .collect()
 }
 
+// ── Custom scrollbar ──────────────────────────────────────────────────────
+
 fn draw_custom_scrollbar(
-    frame: &mut widgetui::ResMut<widgetui::WidgetFrame>,
+    frame: &mut ratatui::Frame,
     area: Rect,
     content_len: usize,
     viewport_len: usize,
     scroll_pos: usize,
     orientation: ScrollbarOrientation,
 ) {
-    let track_len = match orientation {
-        ScrollbarOrientation::VerticalRight | ScrollbarOrientation::VerticalLeft => area.height,
-        ScrollbarOrientation::HorizontalBottom | ScrollbarOrientation::HorizontalTop => area.width,
-    };
-
-    if track_len == 0 || content_len <= viewport_len {
-        return;
-    }
-
     let track_len = match orientation {
         ScrollbarOrientation::VerticalRight | ScrollbarOrientation::VerticalLeft => area.height,
         ScrollbarOrientation::HorizontalBottom | ScrollbarOrientation::HorizontalTop => area.width,
@@ -1062,26 +993,23 @@ fn draw_custom_scrollbar(
         ScrollbarOrientation::HorizontalBottom | ScrollbarOrientation::HorizontalTop => ("─", "━"),
     };
 
-    // Build the scrollbar content using Spans for reliable styling
     let mut text_lines = Vec::new();
 
     if matches!(
         orientation,
         ScrollbarOrientation::VerticalRight | ScrollbarOrientation::VerticalLeft
     ) {
-        // Vertical: Each character is a new line
         for i in 0..track_len {
             let is_thumb = i >= thumb_pos && i < thumb_pos + thumb_size;
             let (symbol, style) = if is_thumb {
-                (thumb_symbol, Style::default().fg(Color::Gray)) // Visible thumb
+                (thumb_symbol, Style::default().fg(Color::Gray))
             } else {
-                (track_symbol, Style::default().fg(Color::DarkGray)) // Subtle track
+                (track_symbol, Style::default().fg(Color::DarkGray))
             };
             text_lines.push(Line::from(Span::styled(symbol, style)));
         }
         frame.render_widget(Paragraph::new(text_lines), area);
     } else {
-        // Horizontal: Single line with multiple spans
         let mut spans = Vec::new();
         for i in 0..track_len {
             let is_thumb = i >= thumb_pos && i < thumb_pos + thumb_size;

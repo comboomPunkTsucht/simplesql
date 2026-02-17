@@ -1,6 +1,10 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// hide console window on Windows in release
 
 // either ... or optional Graphical (GUI)
+
+// The application will automatically detect if it is running in a terminal or not. If it is running in a terminal, it will default to TUI mode unless the `--gui` flag is set. If it is not running in a terminal, it will default to GUI mode.
+// The .app/.desktop/.link starts the Programm automatikly in GUI mode.
 
 //! # simplesql
 //! **simplesql** is a modern, lightweight SQL client that runs in Terminal (TUI) mode. Built for developers, DBAs, and power users who need fast, intuitive access to their databases.
@@ -8,7 +12,6 @@
 //! ## 🔧 Features
 //!
 //! - ⚡ Fast and responsive Terminal User Interface (TUI)
-// //! - Optional 🖼️ Graphical User Interface (GUI) for a more visual experience [WIP]
 //! - 🛠️ Simple command-line controls
 //! - 🔁 Cross-platform support: Linux, macOS, Windows, FreeBSD
 //!
@@ -33,7 +36,6 @@
 //!
 //! | Short | Long        | Description                                           |
 //! |-------|-------------|-------------------------------------------------------|
-// //! | `-g`  | `--gui`     | Launch **simplesql** in graphical mode (default)      |
 //! | `-t`, `-c` | `--tui`, `--cli`| Launch in terminal mode                      |
 //! | `-h`  | `--help`    | Show help message                                     |
 //! | `-V`  | `--version` | Show version info                                     |
@@ -45,9 +47,8 @@
 //! ```
 //!
 //! ## Special Behavior
-//! The application will automatically detect if it is running in a terminal or not. If it is running in a terminal, it will default to TUI mode unless the `--gui` flag is set. If it is not running in a terminal, it will default to GUI mode.
-//! The Terminal might be appearing in the background, but it is only for logging in GUI Mode.
-//! The .app/.desktop/.link starts the Programm automatikly in GUI mode.
+// //! The application will automatically detect if it is running in a terminal or not. If it is running in a terminal, it will default to TUI mode unless the `--gui` flag is set. If it is not running in a terminal, it will default to GUI mode.
+// //! The .app/.desktop/.link starts the Programm automatikly in GUI mode.
 //!
 //! ## 📄 Changelog
 //!
@@ -64,9 +65,6 @@
 use clap::{Arg, Command};
 #[allow(unused_imports)]
 use std::io::Write;
-
-#[allow(unused_imports)]
-mod gui;
 #[allow(unused_imports)]
 mod shared;
 #[allow(unused_imports)]
@@ -102,17 +100,6 @@ fn main() {
     .version(version)
     .author(authors)
     .about(description)
-     .arg(
-          Arg::new("gui")
-            .long("gui")
-            .short('g')
-            .global(true)
-            .default_value("false")
-            .conflicts_with("tui")
-            .action(clap::ArgAction::SetTrue)
-            .long_help("When Flag is set the programm runs in the non default Graphical User Interface Mode. This is a work in progress and not yet fully implemented.")
-            .help("If set the program runs in gui mode [WIP]")
-         )
       .arg(
           Arg::new("tui")
             .long("tui")
@@ -123,7 +110,6 @@ fn main() {
             .visible_short_alias('c')
             .global(true)
             .default_value("true")
-            .conflicts_with("gui")
             .action(clap::ArgAction::SetTrue)
             .long_help("When Flag is set the programm runs in the default Terminal User Interface Mode.\nPress F1 for help inside the TUI.")
             .help("If set the programm runs in tui mode [default].\nPress F1 for help inside the TUI. -")
@@ -139,22 +125,14 @@ fn main() {
         eprintln!("Error generating config: {}", e);
         std::process::exit(1);
     }
-    let is_terminal = (atty::is(atty::Stream::Stdout) || atty::is(atty::Stream::Stderr))
-        && !matches.get_flag("gui");
+    let is_terminal = atty::is(atty::Stream::Stdout) || atty::is(atty::Stream::Stderr);
     shared::setup_logger(matches.get_flag("tui") || is_terminal).unwrap();
     let mut file_content = String::new();
     if let Some(file_path) = matches.get_one::<String>("file").map(|s| s.as_str()) {
         file_content = shared::read_file(file_path).unwrap();
     }
 
-    if matches.get_flag("gui") || !is_terminal {
-        // GUI mode
-        info!("GUI Mode activated");
-        if let Err(e) = gui::main_gui(file_content) {
-            error!("{e}");
-            std::process::exit(1);
-        }
-    } else if matches.get_flag("tui") || is_terminal {
+    if matches.get_flag("tui") || is_terminal {
         // TUI mode
         info!("TUI Mode activated");
         if let Err(e) = tui::main_tui(file_content) {

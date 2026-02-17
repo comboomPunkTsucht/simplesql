@@ -26,8 +26,6 @@ use std::{
 };
 use toml::*;
 use tui_logger::TuiLoggerFile;
-#[allow(unused_imports)]
-use widgetui::State;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Tab {
@@ -290,7 +288,7 @@ impl Default for Table {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, State)]
+#[derive(Clone)]
 pub struct AppState {
     pub current_tab: Tab,
     pub config: Arc<Mutex<Config>>,

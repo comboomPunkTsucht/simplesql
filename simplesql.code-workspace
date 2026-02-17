@@ -17,7 +17,8 @@
       "fileMatch": ["config.json", "config.jsonc"],
       "url": "./src/simplesql_config.schema.json"
     }
-  ]
+	],
+	"nuxt.isNuxtApp": false
 	},
 	"extensions": {
 		"recommendations": [

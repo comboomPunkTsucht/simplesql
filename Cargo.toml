@@ -54,7 +54,7 @@ egui_hotkey = "*"
 egui_code_editor = { version = "*", features = ["editor", "egui"] }
 colorful = "*"
 # shared.rs
-sqlx = { version = "*", features = ["runtime-tokio", "tls-rustls-ring-native-roots", "postgres", "mysql", "any", "derive", "macros"] }
+sqlx = { version = "*", features = ["runtime-tokio", "tls-rustls-ring-native-roots", "postgres", "mysql", "any", "derive", "macros", "chrono"] }
 serde = { version = "*", features = ["derive", "std"] }
 toml = { version = "*", features = ["preserve_order", "serde"] }
 log = "*"
@@ -63,4 +63,3 @@ atty = "*"
 humantime = "*"
 tokio = { version = "*", features = ["rt", "rt-multi-thread", "macros"] }
 ctx = "0.2.0"
-

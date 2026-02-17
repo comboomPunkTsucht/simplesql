@@ -7,21 +7,14 @@ use crate::shared;
 use crate::shared::Tab;
 #[allow(unused_imports)]
 use edtui::{
-    syntect::parsing::{Scope, SyntaxReference}, EditorEventHandler, EditorState, EditorStatusLine, EditorTheme, EditorView,
-    Lines,
+    EditorEventHandler, EditorState, EditorStatusLine, EditorTheme, EditorView, Lines,
     SyntaxHighlighter,
+    syntect::parsing::{Scope, SyntaxReference},
 };
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
 use ratatui::layout::Flex;
 use ratatui::symbols::border;
-#[allow(unused_imports)]
-use ratatui::{
-    layout::{Constraint, Direction, Layout},
-    prelude::*,
-    style::{Color, Style},
-    widgets::*,
-};
 use std::cmp::PartialEq;
 #[allow(unused_imports)]
 use std::error::Error;
@@ -31,6 +24,17 @@ use std::time::SystemTime;
 use tui_logger::{TuiLoggerLevelOutput, TuiLoggerSmartWidget, TuiLoggerWidget};
 use tui_popup::Popup;
 use tui_textarea::{CursorMove, TextArea};
+#[allow(unused_imports)]
+use widgetui::ratatui::{
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    prelude::*,
+    style::{Color, Modifier, Style, Stylize},
+    text::{Line, Span, Text},
+    widgets::{
+        Block, BorderType, Borders, Cell, Paragraph, Row, Scrollbar, ScrollbarOrientation,
+        ScrollbarState, Table, TableState, Tabs, Wrap,
+    },
+};
 #[allow(unused_imports)]
 use widgetui::{
     crossterm::event::{
@@ -228,6 +232,9 @@ pub struct ExtendedAppState {
     pub show_file_popup: bool,
     pub file_save: Option<FileAction>,
     pub file_popup_is_active: bool,
+    pub table_selected: usize,
+    pub table_offset: usize,
+    pub table_col_offset: usize,
 }
 impl Default for ExtendedAppState {
     fn default() -> Self {
@@ -250,6 +257,9 @@ impl Default for ExtendedAppState {
             show_file_popup: false,
             file_save: None,
             file_popup_is_active: false,
+            table_selected: 0,
+            table_offset: 0,
+            table_col_offset: 0,
         }
     }
 }
@@ -289,7 +299,7 @@ impl PartialEq for FileAction {
 }
 
 fn widget(
-    mut frame: ResMut<WidgetFrame>,
+    mut frame: ResMut<widgetui::WidgetFrame>,
     mut events: ResMut<Events>,
     mut state: ResMut<ExtendedAppState>,
 ) -> WidgetResult {
@@ -420,7 +430,9 @@ fn widget(
             chunks[1],
         ),
         shared::Tab::TableView => {
-            if state.shared.table.headers.is_empty() && state.shared.table.rows.is_empty() {
+            let table_arc = state.shared.table.clone();
+            let table = table_arc.lock().unwrap();
+            if table.headers.is_empty() && table.rows.is_empty() {
                 frame.render_widget(
                     Paragraph::new("No data available")
                         .style(Style::default().fg(Color::White))
@@ -434,44 +446,178 @@ fn widget(
                 );
             } else {
                 // Header-Zeile
-                let header = Row::new(state.shared.table.headers.clone());
+                // Determine visible area
+                // 1. Render Outer Block
+                let block = Block::default()
+                    .title("Table View")
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Thick);
+                frame.render_widget(block, chunks[1]);
+                let inner_area = chunks[1].inner(ratatui::layout::Margin::new(1, 1));
 
-                // Datenzeilen
-                let rows = state
-                    .shared
-                    .table
-                    .rows
+                // 2. Determine Layout & Scroll flags
+                // Initial assumption: No horizontal scrollbar yet, checking vertical
+                // Note: Table header takes 1 row.
+                let max_rows_visible = inner_area.height.saturating_sub(1) as usize;
+                let has_vertical_scroll = table.rows.len() > max_rows_visible;
+                let v_scroll_width = if has_vertical_scroll { 1 } else { 0 };
+
+                let available_width = inner_area.width.saturating_sub(v_scroll_width);
+
+                // Spaltenbreiten berechnen (Header + Data sampling)
+                // Initialize with header widths
+                let mut max_widths: Vec<u16> =
+                    table.headers.iter().map(|h| h.len() as u16).collect();
+
+                // Check first 100 rows to adjust widths based on content
+                for row in table.rows.iter().take(100) {
+                    for (i, cell) in row.iter().enumerate() {
+                        if i < max_widths.len() {
+                            max_widths[i] = max_widths[i].max(cell.len() as u16);
+                        }
+                    }
+                }
+
+                // Apply padding and clamping
+                let all_col_widths: Vec<u16> = max_widths
+                    .iter()
+                    .map(|&w| (w + 2).clamp(5, 30)) // Min 5, Max 30, Padding 2
+                    .collect();
+
+                // Determine visible columns based on available width
+                let mut current_width = 0;
+                let mut visible_cols_end_idx = state.table_col_offset;
+
+                for (i, width) in all_col_widths
                     .iter()
                     .enumerate()
-                    .map(|(idx, row)| {
-                        let style = if idx % 2 == 0 {
-                            Style::default().bg(Color::Black)
-                        } else {
-                            Style::default().bg(Color::DarkGray)
-                        };
-                        Row::new(row.clone()).style(style)
-                    });
+                    .skip(state.table_col_offset)
+                {
+                    if current_width + width > available_width {
+                        break;
+                    }
+                    current_width += width;
+                    visible_cols_end_idx = i + 1;
+                }
 
-                // Spaltenbreiten dynamisch anpassen
-                let col_count = state.shared.table.headers.len();
-                let col_widths =
-                    vec![Constraint::Percentage(100 / col_count.max(1) as u16); col_count];
+                let has_horizontal_scroll =
+                    visible_cols_end_idx < table.headers.len() || state.table_col_offset > 0;
+                let h_scroll_height = if has_horizontal_scroll { 1 } else { 0 };
 
+                // Final Table Area
+                let table_area = Rect {
+                    x: inner_area.x,
+                    y: inner_area.y,
+                    width: inner_area.width.saturating_sub(v_scroll_width),
+                    height: inner_area.height.saturating_sub(h_scroll_height),
+                };
+
+                // 3. Update State (Scrolling)
+                let content_height = table_area.height.saturating_sub(1) as usize; // -1 for Header
+
+                // Adjust scrolling if selection moved out of view
+                if state.table_selected < state.table_offset {
+                    state.table_offset = state.table_selected;
+                } else if state.table_selected >= state.table_offset + content_height {
+                    state.table_offset = state
+                        .table_selected
+                        .saturating_sub(content_height)
+                        .saturating_add(1);
+                }
+
+                let start_index = state.table_offset;
+                let end_index = (start_index + content_height).min(table.rows.len());
+
+                // Construct Headers for visible columns
+                let visible_headers = &table.headers[state.table_col_offset..visible_cols_end_idx];
+                let header = Row::new(visible_headers.iter().map(|s| s.as_str()));
+
+                // Construct Rows for visible columns
+                let rows =
+                    table.rows[start_index..end_index]
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, row)| {
+                            let actual_idx = start_index + idx;
+                            let visible_cells = row
+                                .iter()
+                                .enumerate()
+                                .skip(state.table_col_offset)
+                                .take(visible_cols_end_idx - state.table_col_offset)
+                                .map(|(col_idx, s)| {
+                                    let width = all_col_widths[col_idx] as usize;
+                                    // Truncate logic: if content > width, truncate and add ellipsis
+                                    // We use width.saturating_sub(1) to fit the ellipsis.
+                                    if s.chars().count() > width {
+                                        let mut truncated: String =
+                                            s.chars().take(width.saturating_sub(1)).collect();
+                                        truncated.push('…');
+                                        Cell::from(truncated)
+                                    } else {
+                                        Cell::from(s.clone())
+                                    }
+                                });
+                            let style = if actual_idx == state.table_selected {
+                                style::Style::default().bg(Color::White).fg(Color::Black)
+                            } else if actual_idx % 2 == 0 {
+                                style::Style::default().bg(Color::Black)
+                            } else {
+                                style::Style::default().bg(Color::DarkGray)
+                            };
+                            Row::new(visible_cells).style(style)
+                        });
+
+                // Spaltenbreiten für gerenderte Tabelle
+                let col_widths: Vec<Constraint> = all_col_widths
+                    [state.table_col_offset..visible_cols_end_idx]
+                    .iter()
+                    .map(|&w| Constraint::Length(w))
+                    .collect();
+
+                // 4. Render Table
                 frame.render_widget(
                     Table::default()
                         .rows(rows)
                         .header(header)
-                        .block(
-                            Block::default()
-                                .title("Table View")
-                                .borders(Borders::ALL)
-                                .border_type(BorderType::Thick),
-                        )
+                        // No Block here, outer block rendered already
                         .cell_highlight_style(Style::default().fg(Color::White))
                         .row_highlight_style(Style::default().fg(Color::Black).bg(Color::White))
                         .widths(&col_widths),
-                    chunks[1],
+                    table_area,
                 );
+
+                // 5. Render Scrollbars
+                if has_vertical_scroll {
+                    draw_custom_scrollbar(
+                        &mut frame,
+                        Rect {
+                            x: table_area.right(),
+                            y: table_area.y, // content start, including header? Layout matches table_area
+                            width: 1,
+                            height: table_area.height, // scrollbar matches table height (including header area)
+                        },
+                        table.rows.len(),
+                        content_height, // viewport is rows capacity
+                        state.table_offset,
+                        ScrollbarOrientation::VerticalRight,
+                    );
+                }
+
+                if has_horizontal_scroll {
+                    draw_custom_scrollbar(
+                        &mut frame,
+                        Rect {
+                            x: table_area.x,
+                            y: table_area.bottom(),
+                            width: table_area.width,
+                            height: 1,
+                        },
+                        table.headers.len(),
+                        visible_cols_end_idx.saturating_sub(state.table_col_offset),
+                        state.table_col_offset,
+                        ScrollbarOrientation::HorizontalBottom,
+                    );
+                }
             }
         }
 
@@ -756,6 +902,50 @@ fn widget(
                                     state.file_save = Some(FileAction::Load);
                                     state.show_file_popup = !state.show_file_popup;
                                 }
+                                KeyCode::Down => {
+                                    if state.shared.current_tab == shared::Tab::TableView {
+                                        let table_len =
+                                            state.shared.table.lock().unwrap().rows.len();
+                                        if table_len > 0 {
+                                            if state.table_selected < table_len - 1 {
+                                                state.table_selected += 1;
+                                            } else {
+                                                state.table_selected = 0;
+                                            }
+                                        }
+                                    }
+                                }
+                                KeyCode::Up => {
+                                    if state.shared.current_tab == shared::Tab::TableView {
+                                        let table_len =
+                                            state.shared.table.lock().unwrap().rows.len();
+                                        if table_len > 0 {
+                                            if state.table_selected > 0 {
+                                                state.table_selected -= 1;
+                                            } else {
+                                                state.table_selected = table_len - 1;
+                                            }
+                                        }
+                                    }
+                                }
+                                KeyCode::Right => {
+                                    if state.shared.current_tab == shared::Tab::TableView {
+                                        let table_headers_len =
+                                            state.shared.table.lock().unwrap().headers.len();
+                                        if state.table_col_offset
+                                            < table_headers_len.saturating_sub(1)
+                                        {
+                                            state.table_col_offset += 1;
+                                        }
+                                    }
+                                }
+                                KeyCode::Left => {
+                                    if state.shared.current_tab == shared::Tab::TableView {
+                                        if state.table_col_offset > 0 {
+                                            state.table_col_offset -= 1;
+                                        }
+                                    }
+                                }
                                 _ => {}
                             }
                             // Handle modifier keys
@@ -832,4 +1022,76 @@ pub fn get_editor_lines_as_string(state: &ExtendedAppState) -> String {
         .flatten(&Some('\n'))
         .into_iter()
         .collect()
+}
+
+fn draw_custom_scrollbar(
+    frame: &mut widgetui::ResMut<widgetui::WidgetFrame>,
+    area: Rect,
+    content_len: usize,
+    viewport_len: usize,
+    scroll_pos: usize,
+    orientation: ScrollbarOrientation,
+) {
+    let track_len = match orientation {
+        ScrollbarOrientation::VerticalRight | ScrollbarOrientation::VerticalLeft => area.height,
+        ScrollbarOrientation::HorizontalBottom | ScrollbarOrientation::HorizontalTop => area.width,
+    };
+
+    if track_len == 0 || content_len <= viewport_len {
+        return;
+    }
+
+    let track_len = match orientation {
+        ScrollbarOrientation::VerticalRight | ScrollbarOrientation::VerticalLeft => area.height,
+        ScrollbarOrientation::HorizontalBottom | ScrollbarOrientation::HorizontalTop => area.width,
+    };
+
+    if track_len == 0 || content_len <= viewport_len {
+        return;
+    }
+
+    let thumb_size =
+        ((viewport_len as f64 / content_len as f64) * track_len as f64).max(1.0) as u16;
+    let max_thumb_pos = track_len.saturating_sub(thumb_size);
+    let thumb_pos = ((scroll_pos as f64 / (content_len.saturating_sub(viewport_len)) as f64)
+        * max_thumb_pos as f64)
+        .min(max_thumb_pos as f64) as u16;
+
+    let (track_symbol, thumb_symbol) = match orientation {
+        ScrollbarOrientation::VerticalRight | ScrollbarOrientation::VerticalLeft => ("│", "┃"),
+        ScrollbarOrientation::HorizontalBottom | ScrollbarOrientation::HorizontalTop => ("─", "━"),
+    };
+
+    // Build the scrollbar content using Spans for reliable styling
+    let mut text_lines = Vec::new();
+
+    if matches!(
+        orientation,
+        ScrollbarOrientation::VerticalRight | ScrollbarOrientation::VerticalLeft
+    ) {
+        // Vertical: Each character is a new line
+        for i in 0..track_len {
+            let is_thumb = i >= thumb_pos && i < thumb_pos + thumb_size;
+            let (symbol, style) = if is_thumb {
+                (thumb_symbol, Style::default().fg(Color::Gray)) // Visible thumb
+            } else {
+                (track_symbol, Style::default().fg(Color::DarkGray)) // Subtle track
+            };
+            text_lines.push(Line::from(Span::styled(symbol, style)));
+        }
+        frame.render_widget(Paragraph::new(text_lines), area);
+    } else {
+        // Horizontal: Single line with multiple spans
+        let mut spans = Vec::new();
+        for i in 0..track_len {
+            let is_thumb = i >= thumb_pos && i < thumb_pos + thumb_size;
+            let (symbol, style) = if is_thumb {
+                (thumb_symbol, Style::default().fg(Color::Gray))
+            } else {
+                (track_symbol, Style::default().fg(Color::DarkGray))
+            };
+            spans.push(Span::styled(symbol, style));
+        }
+        frame.render_widget(Paragraph::new(Line::from(spans)), area);
+    }
 }

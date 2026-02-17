@@ -3,7 +3,6 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-
 #[allow(unused_imports)]
 use crate::shared::{AppState, NordColor};
 #[allow(unused_imports)]
@@ -134,8 +133,9 @@ impl TabViewer for ExtendedAppState {
             }
             Tab::TableView => {
                 ui.label("Table View");
-                let table = &mut self.shared.table;
-                if table.headers.clone().is_empty() && table.rows.clone().is_empty() {
+                ui.label("Table View");
+                let table = self.shared.table.lock().unwrap();
+                if table.headers.is_empty() && table.rows.is_empty() {
                     ui.label("No data to display.");
                 } else {
                     egui::ScrollArea::both()
@@ -152,30 +152,32 @@ impl TabViewer for ExtendedAppState {
                                 .animate_scrolling(true)
                                 .drag_to_scroll(false)
                                 .columns(
-                                    Column::auto().resizable(true).auto_size_this_frame(true),
+                                    Column::initial(150.0)
+                                        .at_most(400.0)
+                                        .resizable(true)
+                                        .clip(true),
                                     table.headers.len(),
                                 )
                                 .header(20.0, |mut header| {
-                                    for header_cell in table.headers.clone() {
+                                    for header_cell in &table.headers {
                                         header.col(|ui| {
                                             ui.heading(header_cell);
                                         });
                                     }
                                 })
-                                .body(|mut body| {
-                                    for row in table.rows.clone() {
-                                        body.row(30.0, |mut row_table| {
-                                            for cell in row {
-                                                row_table.col(|ui| {
-                                                    ui.label(cell);
+                                .body(|body| {
+                                    body.rows(30.0, table.rows.len(), |mut row| {
+                                        let row_index = row.index();
+                                        if let Some(r) = table.rows.get(row_index) {
+                                            for cell in r {
+                                                row.col(|ui| {
+                                                    ui.add(egui::Label::new(cell).truncate());
                                                 });
                                             }
-                                        });
-                                    }
-                                })
-                                .inner_rect = ui.available_rect_before_wrap();
-                        })
-                        .inner_rect = ui.available_rect_before_wrap();
+                                        }
+                                    });
+                                });
+                        });
                 }
             }
             _ => {}
@@ -204,23 +206,27 @@ impl eframe::App for ExtendedAppState {
     }*/
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.ctx = ctx.clone();
-        let first_ctx = self.ctx.clone();
-        self.file_dialog.update(&first_ctx);
-        self.ctx = first_ctx.clone();
+        self.file_dialog.update(ctx);
 
-        let sec_ctx = self.ctx.clone();
-        egui::TopBottomPanel::top("top_panel").show(&sec_ctx, |ui| {
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Database:");
                 ui.text_edit_singleline(&mut self.shared.db);
                 ui.label("User:");
-                egui::ComboBox::from_id_salt("user_select")
-                    .selected_text(self.shared.user.name.clone())
-                    .show_ui(ui, |ui| {
-                        for cred in &self.shared.config.credentials {
-                            ui.selectable_value(&mut self.shared.user, cred.clone(), &cred.name);
-                        }
-                    });
+                {
+                    let config = self.shared.config.lock().unwrap();
+                    egui::ComboBox::from_id_salt("user_select")
+                        .selected_text(self.shared.user.name.clone())
+                        .show_ui(ui, |ui| {
+                            for cred in &config.credentials {
+                                ui.selectable_value(
+                                    &mut self.shared.user,
+                                    cred.clone(),
+                                    &cred.name,
+                                );
+                            }
+                        });
+                }
                 if ui.button("Run").clicked() {
                     if let Err(e) = shared::run_query(&mut self.shared) {
                         error!("Error running query: {}", e);
@@ -228,13 +234,12 @@ impl eframe::App for ExtendedAppState {
                 }
             });
         });
-        self.ctx = sec_ctx.clone();
-        let thrd_ctx = self.ctx.clone();
-        egui::CentralPanel::default().show(&thrd_ctx, |ui| {
+
+        egui::CentralPanel::default().show(ctx, |ui| {
             ui.set_min_height(720.0);
             ui.set_min_width(1280.0);
-            ui.set_height(1080.0);
-            ui.set_width(1920.0);
+            // ui.set_height(1080.0); // Remove fixed size to allow resizing
+            // ui.set_width(1920.0);  // Remove fixed size to allow resizing
             let mut state = self.dock_state.clone();
             egui_dock::DockArea::new(&mut state)
                 .tab_context_menus(true)
@@ -250,7 +255,6 @@ impl eframe::App for ExtendedAppState {
                 .show_inside(ui, self);
             self.dock_state = state.clone();
         });
-        self.ctx = thrd_ctx.clone();
     }
 }
 

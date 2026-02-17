@@ -7,10 +7,10 @@ use log::Log;
 use serde::*;
 #[allow(unused_imports)]
 use sqlx::{
-    any::{AnyPoolOptions, AnyQueryResult, AnyRow}, mysql::{MySqlPoolOptions, MySqlQueryResult, MySqlRow}, postgres::{PgPoolOptions, PgQueryResult, PgRow}, Any, Column,
-    MySql,
-    Postgres,
-    Row,
+    Any, Column, MySql, Postgres, Row,
+    any::{AnyPoolOptions, AnyQueryResult, AnyRow},
+    mysql::{MySqlPoolOptions, MySqlQueryResult, MySqlRow},
+    postgres::{PgPoolOptions, PgQueryResult, PgRow},
 };
 use std::ops::Deref;
 use std::path::Path;
@@ -19,9 +19,10 @@ use std::time::SystemTime;
 #[allow(unused_imports)]
 use std::{
     fs,
-    fs::{create_dir_all, remove_dir_all, remove_file, File},
+    fs::{File, create_dir_all, remove_dir_all, remove_file},
     io::{Read, Write},
     result::Result,
+    sync::{Arc, Mutex},
 };
 use toml::*;
 use tui_logger::TuiLoggerFile;
@@ -160,9 +161,36 @@ impl Table {
                         let values: Vec<String> = headers
                             .iter()
                             .map(|h| {
-                                row.try_get::<Option<String>, _>(h.as_str())
-                                    .unwrap_or(None)
-                                    .unwrap_or_else(|| "NULL".to_string())
+                                let name = h.as_str();
+                                // Try String
+                                if let Ok(Some(s)) = row.try_get::<Option<String>, _>(name) {
+                                    return s;
+                                }
+                                // Try Integers
+                                if let Ok(Some(i)) = row.try_get::<Option<i64>, _>(name) {
+                                    return i.to_string();
+                                }
+                                // Try Floats
+                                if let Ok(Some(f)) = row.try_get::<Option<f64>, _>(name) {
+                                    return f.to_string();
+                                }
+                                // Try Bool
+                                if let Ok(Some(b)) = row.try_get::<Option<bool>, _>(name) {
+                                    return b.to_string();
+                                }
+                                // Try Date/Time
+                                if let Ok(Some(t)) =
+                                    row.try_get::<Option<chrono::NaiveDateTime>, _>(name)
+                                {
+                                    return t.to_string();
+                                }
+                                if let Ok(Some(d)) =
+                                    row.try_get::<Option<chrono::NaiveDate>, _>(name)
+                                {
+                                    return d.to_string();
+                                }
+                                // Try specific SQLX types if needed, or fallback
+                                "NULL".to_string()
                             })
                             .collect();
                         rows.push(values);
@@ -181,9 +209,30 @@ impl Table {
                         let values: Vec<String> = headers
                             .iter()
                             .map(|h| {
-                                row.try_get::<Option<String>, _>(h.as_str())
-                                    .unwrap_or(None)
-                                    .unwrap_or_else(|| "NULL".to_string())
+                                let name = h.as_str();
+                                if let Ok(Some(s)) = row.try_get::<Option<String>, _>(name) {
+                                    return s;
+                                }
+                                if let Ok(Some(i)) = row.try_get::<Option<i64>, _>(name) {
+                                    return i.to_string();
+                                }
+                                if let Ok(Some(f)) = row.try_get::<Option<f64>, _>(name) {
+                                    return f.to_string();
+                                }
+                                if let Ok(Some(b)) = row.try_get::<Option<bool>, _>(name) {
+                                    return b.to_string();
+                                }
+                                if let Ok(Some(t)) =
+                                    row.try_get::<Option<chrono::NaiveDateTime>, _>(name)
+                                {
+                                    return t.to_string();
+                                }
+                                if let Ok(Some(d)) =
+                                    row.try_get::<Option<chrono::NaiveDate>, _>(name)
+                                {
+                                    return d.to_string();
+                                }
+                                "NULL".to_string()
                             })
                             .collect();
                         rows.push(values);
@@ -202,9 +251,20 @@ impl Table {
                         let values: Vec<String> = headers
                             .iter()
                             .map(|h| {
-                                row.try_get::<Option<String>, _>(h.as_str())
-                                    .unwrap_or(None)
-                                    .unwrap_or_else(|| "NULL".to_string())
+                                let name = h.as_str();
+                                if let Ok(Some(s)) = row.try_get::<Option<String>, _>(name) {
+                                    return s;
+                                }
+                                if let Ok(Some(i)) = row.try_get::<Option<i64>, _>(name) {
+                                    return i.to_string();
+                                }
+                                if let Ok(Some(f)) = row.try_get::<Option<f64>, _>(name) {
+                                    return f.to_string();
+                                }
+                                if let Ok(Some(b)) = row.try_get::<Option<bool>, _>(name) {
+                                    return b.to_string();
+                                }
+                                "NULL".to_string()
                             })
                             .collect();
                         rows.push(values);
@@ -233,10 +293,10 @@ impl Default for Table {
 #[derive(Clone, State)]
 pub struct AppState {
     pub current_tab: Tab,
-    pub config: Config,
+    pub config: Arc<Mutex<Config>>,
     pub sql_query: String,
     pub user: Credential,
-    pub table: Table, // Optional table name for TableView tab
+    pub table: Arc<Mutex<Table>>, // Optional table name for TableView tab
     pub db: String,
 }
 
@@ -246,10 +306,10 @@ impl Default for AppState {
         let user: Credential = config.credentials[0].clone();
         AppState {
             current_tab: Tab::default(),
-            config,
+            config: Arc::new(Mutex::new(config)),
             sql_query: String::from("select * from data;"),
             user,
-            table: Table::default(),
+            table: Arc::new(Mutex::new(Table::default())),
             db: String::from("bewerbungen"),
         }
     }
@@ -257,17 +317,17 @@ impl Default for AppState {
 #[allow(dead_code)]
 impl AppState {
     pub fn set_next_user(&mut self) {
-        if self.config.credentials.is_empty() {
+        let config = self.config.lock().unwrap();
+        if config.credentials.is_empty() {
             panic!("No credentials available in config");
         }
-        let current_index = self
-            .config
+        let current_index = config
             .credentials
             .iter()
             .position(|c| c.name == self.user.name)
             .unwrap_or(0);
-        let next_index = (current_index + 1) % self.config.credentials.len();
-        self.user = self.config.credentials[next_index].clone();
+        let next_index = (current_index + 1) % config.credentials.len();
+        self.user = config.credentials[next_index].clone();
     }
 }
 
@@ -389,7 +449,7 @@ pub fn get_config_content(state: &mut AppState) -> std::io::Result<String> {
         buffer = get_config_defaults();
     }
 
-    state.config = get_config();
+    state.config = Arc::new(Mutex::new(get_config()));
     Ok(buffer)
 }
 pub fn set_config_content(buffer: String) -> std::io::Result<()> {
@@ -422,11 +482,14 @@ pub fn read_file(path: &str) -> std::io::Result<String> {
 #[tokio::main]
 pub async fn run_query(state: &mut AppState) -> Result<(), sqlx::Error> {
     sqlx::any::install_default_drivers();
-    let connection: &Connection = state
+    let connection: Connection = state
         .config
+        .lock()
+        .unwrap()
         .connections
         .iter()
         .find(|c| c.name == state.user.connection)
+        .cloned()
         .expect("Connection not found");
     match connection.r#type.as_str() {
         "mariadb" | "mysql" => {
@@ -436,13 +499,14 @@ pub async fn run_query(state: &mut AppState) -> Result<(), sqlx::Error> {
                     "mysql://{}:{}@{}:{}/{}",
                     state.user.username,
                     state.user.password,
-                    (*connection).host,
-                    (*connection).port,
+                    connection.host,
+                    connection.port,
                     state.db
                 ))
                 .await?;
             let rows = sqlx::query(&state.sql_query).fetch_all(&pool).await?;
-            state.table = Table::from_raw_row(
+            let mut table = state.table.lock().unwrap();
+            *table = Table::from_raw_row(
                 RawRow::MySql(rows),
                 RawData::MySql(sqlx::query(&state.sql_query).execute(&pool).await?),
             );
@@ -454,13 +518,14 @@ pub async fn run_query(state: &mut AppState) -> Result<(), sqlx::Error> {
                     "postgres://{}:{}@{}:{}/{}",
                     state.user.username,
                     state.user.password,
-                    (*connection).host,
-                    (*connection).port,
+                    connection.host,
+                    connection.port,
                     state.db
                 ))
                 .await?;
             let rows = sqlx::query(&state.sql_query).fetch_all(&pool).await?;
-            state.table = Table::from_raw_row(
+            let mut table = state.table.lock().unwrap();
+            *table = Table::from_raw_row(
                 RawRow::Postgres(rows),
                 RawData::Postgres(sqlx::query(&state.sql_query).execute(&pool).await?),
             );
@@ -470,16 +535,17 @@ pub async fn run_query(state: &mut AppState) -> Result<(), sqlx::Error> {
                 .max_connections(10)
                 .connect(&format!(
                     "{}://{}:{}@{}:{}/{}",
-                    (*connection).r#type,
+                    connection.r#type,
                     state.user.username,
                     state.user.password,
-                    (*connection).host,
-                    (*connection).port,
+                    connection.host,
+                    connection.port,
                     state.db
                 ))
                 .await?;
             let rows = sqlx::query(&state.sql_query).fetch_all(&pool).await?;
-            state.table = Table::from_raw_row(
+            let mut table = state.table.lock().unwrap();
+            *table = Table::from_raw_row(
                 RawRow::Any(rows),
                 RawData::Any(sqlx::query(&state.sql_query).execute(&pool).await?),
             );

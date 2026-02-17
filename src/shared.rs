@@ -25,7 +25,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 use toml::*;
-use tui_logger::TuiLoggerFile;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Tab {
@@ -370,7 +369,7 @@ pub fn setup_logger(is_tui: bool) -> Result<(), fern::InitError> {
     if is_tui {
         tui_logger::init_logger(log_level).unwrap();
         tui_logger::set_default_level(log_level);
-        tui_logger::set_log_file(TuiLoggerFile::new(get_log_path().as_str()));
+        tui_logger::set_log_file(get_log_path().as_str()).ok();
     } else {
         fern::Dispatch::new()
             .format(|out, message, record| {

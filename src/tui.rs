@@ -531,8 +531,7 @@ fn ui(frame: &mut ratatui::Frame, state: &mut ExtendedAppState) {
                     Table::default()
                         .rows(rows)
                         .header(header)
-                        .cell_highlight_style(Style::default().fg(Color::White))
-                        .row_highlight_style(Style::default().fg(Color::Black).bg(Color::White))
+                        .highlight_style(Style::default().fg(Color::Black).bg(Color::White))
                         .widths(&col_widths),
                     table_area,
                 );

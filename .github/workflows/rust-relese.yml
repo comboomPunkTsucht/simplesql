@@ -103,25 +103,25 @@ jobs:
             os-name: windows
             arch: x86_64
 
-          #- target: x86_64-pc-windows-gnu
-          #  os: windows-latest
-          #  os-name: windows-gnu
-          #  arch: x86_64
+          - target: x86_64-pc-windows-gnu
+            os: windows-latest
+            os-name: windows-gnu
+            arch: x86_64
 
-          #- target: x86_64-pc-windows-gnullvm
-          #  os: windows-latest
-          #  os-name: windows-gnullvm
-          #  arch: x86_64
+          - target: x86_64-pc-windows-gnullvm
+            os: windows-latest
+            os-name: windows-gnullvm
+            arch: x86_64
 
           - target: aarch64-pc-windows-msvc
             os: windows-latest
             os-name: windows
             arch: aarch64
 
-            #- target: aarch64-pc-windows-gnullvm
-            #  os: windows-latest
-            #  os-name: windows-gnullvm
-            #  arch: aarch64
+          - target: aarch64-pc-windows-gnullvm
+            os: windows-latest
+            os-name: windows-gnullvm
+            arch: aarch64
 
             # macOS targets
           - target: x86_64-apple-darwin
@@ -135,10 +135,10 @@ jobs:
             arch: aarch64
 
           # BSD targets
-          #- target: x86_64-unknown-freebsd
-          #  os: ubuntu-latest
-          #  os-name: freebsd
-          #  arch: x86_64
+          - target: x86_64-unknown-freebsd
+            os: ubuntu-latest
+            os-name: freebsd
+            arch: x86_64
 
     runs-on: ${{ matrix.os }}
     steps:

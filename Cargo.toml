@@ -33,9 +33,9 @@ default = [
 
 [dependencies]
 # tui.rs
-ratatui = "*"
-widgetui = "*"
-crossterm = "*"
+ratatui = "0.29.0"
+widgetui = "0.7.1"
+crossterm = "0.28.1"
 edtui = "*"
 tui-logger = "*"
 tui-textarea = { version = "*", features = ["search"] }
@@ -45,12 +45,12 @@ chrono = "*"
 clap = "*"
 # gui.rs
 #iced = { version = "*", features = ["default", "highlighter", "tokio", "debug", "wgpu", "markdown", "advanced", "system", "auto-detect-theme"], default-features = false }
-egui = { version = "*", features = ["serde", "log", "color-hex", "persistence", "deadlock_detection", "document-features"] }
+egui = { version = "0.32.3", features = ["serde", "log", "color-hex", "persistence", "deadlock_detection", "document-features"] }
 eframe = "*"
 egui_extras = "*"
 egui_dock = "*"
 egui-file-dialog = "*"
-egui_hotkey = "*"
+# egui_hotkey = "*"
 egui_code_editor = { version = "*", features = ["editor", "egui"] }
 colorful = "*"
 # shared.rs
